@@ -1,0 +1,9 @@
+[meta]
+name = "MacroTrackGenerator"
+author = "RuteNL"
+category = "Editor"
+
+version = "0.1.0"
+
+[script]
+imports = [ "Dialogs.as" ]
