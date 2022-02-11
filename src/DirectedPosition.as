@@ -13,7 +13,11 @@ class DirectedPosition{
     int get_z() {return position.z;}
     void set_z(int z) {position.z = z;}
 
-    string ToString() {
+    string ToPrintString() {
         return "[" + x + ", " + y + ", " + z + "], direction = " + tostring(direction);
+    }
+
+    string ToString() {
+        return x + "," + y + "," + z + "," + int(direction);
     }
 };

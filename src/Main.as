@@ -1,9 +1,17 @@
 void Main() {
-    
+    auto app = GetApp();
+    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+    string relativeSaveLocation = "Stadium\\zzz_MacroTrackGenerator\\RuteNL_aassaasa_Part.Macroblock.Gbx";
+    print("Loading from relative location: " + relativeSaveLocation);
+    auto new = editor.PluginMapType.GetMacroblockModelFromFilePath(relativeSaveLocation);
+    print("New is null? " + (new is null));
 }
 
 // todo:
-// Try to auto detect entrance and exit connector type (EConnector)
+// we can't load macroblock from file witout game restart
+// dont save to new macroblock file, just updte existing macroblock file? howe?
+// use get block connect results to check for connector types? 
+// make it more general and save the block in the part details instead of econnector?
 // generate tracks lol
 
 enum ECreateState {
@@ -26,6 +34,10 @@ vec4 baseWindowColor = vec4(.1, .1, .1, 1);
 vec4 windowColor = baseWindowColor;
 MacroPartDetails@ partDetails = null;
 
+CGameCtnBlock@ entranceBlock = null;
+CGameCtnBlock@ exitBlock = null;
+EPartType entranceType = EPartType::Part;
+EPartType exitType = EPartType::Part;
 
 void FocusCam(int x, int y, int z) {
     auto app = GetApp();
@@ -85,6 +97,18 @@ bool OnKeyPress(bool down, VirtualKey key) {
     if(key == VirtualKey::Menu) {
         altIsDown = down;
     }
+    
+    if(state == ECreateState::UserSelectMacro && key == VirtualKey::V && down) {
+        auto app = GetApp();
+        auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+        auto coord = editor.PluginMapType.CursorCoord;
+        auto dir = editor.PluginMapType.CursorDir;
+        @macroPlace = DirectedPosition(coord.x, coord.y, coord.z, dir);
+        // placeusermacroblock changes state, so this doesn't get repeatedly called
+        PlaceUserMacroblock(macroPlace, false);
+        return true;
+    }
+
     return false;
 }
 
@@ -95,7 +119,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         auto coord = editor.PluginMapType.CursorCoord;
         auto absEntrance = DirectedPosition(coord.x, coord.y, coord.z, editor.PluginMapType.CursorDir);
         @partDetails.entrance = ToRelativePosition(selectedMacroBlock, macroPlace, absEntrance);
-        print("Entrance relative: " + partDetails.entrance.ToString());
+        print("Entrance relative: " + partDetails.entrance.ToPrintString());
         state = ECreateState::SelectExit;
         windowColor = vec4(35./255, 1./255, 1./255, 1);
         return true;
@@ -106,7 +130,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         auto coord = editor.PluginMapType.CursorCoord;
         auto absExit = DirectedPosition(coord.x, coord.y, coord.z, editor.PluginMapType.CursorDir);
         @partDetails.exit = ToRelativePosition(selectedMacroBlock, macroPlace, absExit);
-        print("Exit relative: " + partDetails.exit.ToString());
+        print("Exit relative: " + partDetails.exit.ToPrintString());
 
         editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Block;
         // Detect items in macroblock
@@ -125,7 +149,18 @@ bool OnMouseButton(bool down, int button, int x, int y) {
             editor.PluginMapType.Redo();
         }
 
-        state = ECreateState::ConfirmItems;
+        // clear any accidentally selected coords
+        editor.PluginMapType.CustomSelectionCoords.RemoveRange(0, editor.PluginMapType.CustomSelectionCoords.Length);
+        editor.PluginMapType.HideCustomSelection();
+        // set type from detected blocks
+        partDetails.type = entranceType;
+        if(exitType != EPartType::Part)
+            partDetails.type = exitType;
+        if(partDetails.embeddedItems.Length == 0) {
+            state = ECreateState::EnterDetails;
+        } else {
+            state = ECreateState::ConfirmItems;
+        }
         windowColor = baseWindowColor;
         return true;
     }
@@ -141,15 +176,15 @@ DirectedPosition@ FindMacroblockPlacement(CGameCtnMacroBlockInfo@ macroblock) {
     auto placeDir = CGameEditorPluginMap::ECardinalDirections::West;
 
     // Test placing in center of the map first (to not destroy items in the macroblock)
-    auto macroPlace = DirectedPosition(
+    auto placePoint = DirectedPosition(
         mapSize.x / 2 - macroblockSize.x / 2,
         mapSize.y / 2 - macroblockSize.y / 2,
         mapSize.z / 2 - macroblockSize.z / 2,
         placeDir
     );
-    auto canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, macroPlace.position, macroPlace.direction);
+    auto canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, placePoint.position, placePoint.direction);
     if(canPlace) 
-        return macroPlace;
+        return placePoint;
 
     mapSize.x -= macroblockSize.x;
     mapSize.y -= macroblockSize.y;
@@ -159,14 +194,84 @@ DirectedPosition@ FindMacroblockPlacement(CGameCtnMacroBlockInfo@ macroblock) {
     for(uint x = 0; x < mapSize.x; x += step) {
         for(uint y = 0; y < mapSize.y; y += step) {
             for(uint z = 0; z < mapSize.z; z += step) {
-                @macroPlace = DirectedPosition(x, y, z, placeDir);
-                canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, macroPlace.position, macroPlace.direction);
+                @placePoint = DirectedPosition(x, y, z, placeDir);
+                canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, placePoint.position, placePoint.direction);
                 if(canPlace) 
-                    return macroPlace;
+                    return placePoint;
             }
         }
     }
     return null;
+}
+
+EConnector GetConnector(CGameCtnBlockInfo@ blockInfo) {
+    if(blockInfo is null || !blockInfo.PageName.Contains('/')) return EConnector::Platform;
+    auto rootPage = string(blockInfo.PageName).Split('/')[0];
+    if(rootPage == 'RoadDirt')
+        return EConnector::RoadDirt;
+    if(rootPage == 'RoadBump')
+        return EConnector::RoadBump;
+    if(rootPage == 'RoadIce')
+        return EConnector::Bobsleigh;
+    if(rootPage == 'Walls')
+        return EConnector::Decowall;
+
+    // all other types are platform (road/platform/technics/terrain/water)
+    return EConnector::Platform;
+}
+
+string[]@ GetTags(CGameCtnBlockInfo@ blockInfo) {
+    string[]@ result = {};
+    if(blockInfo is null || !blockInfo.PageName.Contains('/')) return result;
+    auto rootPage = string(blockInfo.PageName).Split('/')[0];
+    if(rootPage == 'RoadTech')
+        result.InsertLast("Tech");
+    if(rootPage == 'RoadDirt')
+        result.InsertLast("Dirt");
+    if(rootPage == 'RoadBump') {
+        result.InsertLast("Tech");
+        result.InsertLast("Road Bump");
+    }
+    if(rootPage == 'RoadIce') {
+        result.InsertLast("Bobsleigh");
+        result.InsertLast("Ice");
+    }
+    if(rootPage == 'PlatformTech')
+        result.InsertLast("FullSpeed");
+    if(rootPage == 'PlatformDirt')
+        result.InsertLast("Dirt");
+    if(rootPage == 'PlatformIce')
+        result.InsertLast("Ice");
+    if(rootPage == 'PlatformGrass')
+        result.InsertLast("Grass");
+    if(rootPage == 'PlatformPlastic')
+        result.InsertLast("Plastic");
+    if(rootPage == 'Water')
+        result.InsertLast("Water");
+    if(rootPage == 'Walls')
+        result.InsertLast("Tech");
+    return result;
+}
+
+void PlaceUserMacroblock(DirectedPosition@ dirPos, bool focusCam = true) {
+    auto app = GetApp();
+    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+    editor.PluginMapType.CopyPaste_SelectAll();
+    print("Count: " + editor.PluginMapType.CopyPaste_GetSelectedCoordsCount());
+    if(editor.PluginMapType.CopyPaste_GetSelectedCoordsCount() != 0) {
+        editor.PluginMapType.CopyPaste_Cut();
+        copiedMap = true;
+    }
+    if(dirPos is null) {
+        state = ECreateState::Idle;
+        warn("Failed to place macro!");
+    } else {
+        editor.PluginMapType.PlaceMacroblock_AirMode(selectedMacroBlock, dirPos.position, dirPos.direction);
+        if(focusCam)
+            FocusCam(dirPos.x, dirPos.y, dirPos.z);
+        state = ECreateState::SelectEntrance;
+        windowColor = vec4(1./255, 30./255, 1./255, 1);
+    }
 }
 
 void RenderInterface() {
@@ -177,19 +282,23 @@ void RenderInterface() {
     UI::PushStyleVar(UI::StyleVar::WindowRounding, 10.0);
     UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(10, 6));
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
-    UI::SetNextWindowSize(500, 300);
+    UI::SetNextWindowSize(500, 330);
     if(UI::Begin("Create MacroPart", windowOpen)) {
 
         if(state == ECreateState::Idle) {
             if(UI::Button("Start")) {
+                auto editor = cast<CGameCtnEditorCommon>(app.Editor);
                 // Reset variables
                 @partDetails = MacroPartDetails();
+                if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
+                    partDetails.author = editor.Challenge.AuthorNickName;
+                    print("author name: " + partDetails.author);
+                }
                 copiedMap = false;
                 @selectedMacroBlock = null;
                 @macroPlace = null;
 
                 state = ECreateState::UserSelectMacro;
-                auto editor = cast<CGameCtnEditorCommon>(app.Editor);
                 editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
             }
         }
@@ -200,25 +309,11 @@ void RenderInterface() {
             if(selectedMacroBlock !is null) {
                 UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
                 UI::TextDisabled('Selected macroblock: "' + selectedMacroBlock.IdName + '"');
+                UI::Text('Press "V" to use the curretly selected macroblock.');
                 UI::PopTextWrapPos();
-            }
-
-            if(selectedMacroBlock !is null && UI::Button("Use selected macroblock")) {
-                editor.PluginMapType.CopyPaste_SelectAll();
-                print("Count: " + editor.PluginMapType.CopyPaste_GetSelectedCoordsCount());
-                if(editor.PluginMapType.CopyPaste_GetSelectedCoordsCount() != 0) {
-                    editor.PluginMapType.CopyPaste_Cut();
-                    copiedMap = true;
-                }
-                @macroPlace = FindMacroblockPlacement(selectedMacroBlock);
-                if(macroPlace is null) {
-                    state = ECreateState::Idle;
-                    warn("Failed to place macro!");
-                } else {
-                    editor.PluginMapType.PlaceMacroblock_AirMode(selectedMacroBlock, macroPlace.position, macroPlace.direction);
-                    FocusCam(macroPlace.x, macroPlace.y, macroPlace.z);
-                    state = ECreateState::SelectEntrance;
-                    windowColor = vec4(1./255, 30./255, 1./255, 1);
+                if(UI::Button("Use selected macroblock")) {
+                    @macroPlace = FindMacroblockPlacement(selectedMacroBlock);
+                    PlaceUserMacroblock(macroPlace);
                 }
             }
         }
@@ -226,19 +321,76 @@ void RenderInterface() {
         if(state == ECreateState::SelectEntrance) {
             UI::TextDisabled("Hiding the map to make selection easier, it will come back!");
             UI::Text("Select position the car enters this part");
+            UI::NewLine();
+            if(entranceBlock is null) {
+                UI::Text("Connector type can automatically be determined if an official block is selected.");
+                UI::TextDisabled("Otherwise you will have to specify it later");
+            } else {
+                UI::Text("Auto detected values:");
+                UI::TextDisabled("You can manually change these later");
+            }
             auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+            auto c = editor.PluginMapType.CursorCoord;
+            @entranceBlock = editor.PluginMapType.GetBlock(int3(c.x, c.y, c.z));
             if(editor.PluginMapType.PlaceMode != CGameEditorPluginMap::EPlaceMode::CustomSelection) {
                 print("Setting placemode");
                 editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CustomSelection;
             }
+            
+            if(entranceBlock !is null) {
+                partDetails.entranceConnector = GetConnector(entranceBlock.BlockInfo);
+                auto tags = GetTags(entranceBlock.BlockInfo);
+                partDetails.AddTags(tags);
+                UI::TextDisabled("Connector: " + tostring(partDetails.entranceConnector));
+                if(entranceBlock.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::Start) {
+                    entranceType = EPartType::Start;
+                } else if(entranceBlock.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::StartFinish) {
+                    entranceType = EPartType::Multilap;
+                } else {
+                    entranceType = EPartType::Part;
+                }
+                UI::TextDisabled("Type: " + tostring(entranceType));
+                UI::TextDisabled("Tags: " + string::Join(tags, ", "));
+            } else{
+                partDetails.entranceConnector = EConnector::Platform;
+            } 
         }
 
         if(state == ECreateState::SelectExit) {
             UI::TextDisabled("Hiding the map to make selection easier, it will come back!");
             UI::Text("Select position the car exits this part");
+            UI::NewLine();
+            if(exitBlock is null) {
+                UI::Text("Can't automatically determine current exit block");
+                UI::TextDisabled("You will have to specify it later");
+            } else {
+                UI::Text("Auto detected values:");
+                UI::TextDisabled("You can manually change these later");
+            }
             auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+            auto c = editor.PluginMapType.CursorCoord;
+            @exitBlock = editor.PluginMapType.GetBlock(int3(c.x, c.y, c.z));
             if(editor.PluginMapType.PlaceMode != CGameEditorPluginMap::EPlaceMode::CustomSelection)
                 editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CustomSelection;
+            
+            if(exitBlock !is null) {
+                partDetails.exitConnector = GetConnector(exitBlock.BlockInfo);
+                auto tags = GetTags(exitBlock.BlockInfo);
+                partDetails.AddTags(tags);
+                UI::TextDisabled("Connector: " + tostring(partDetails.exitConnector));
+                if(exitBlock.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::Finish) {
+                    exitType = EPartType::Finish;
+                } else if(exitBlock.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::StartFinish) {
+                    exitType = EPartType::Multilap;
+                } else {
+                    exitType = EPartType::Part;
+                }
+                UI::TextDisabled("Type: " + tostring(exitType));
+                UI::TextDisabled("Tags: " + string::Join(tags, ", "));
+
+            } else {
+                partDetails.exitConnector = EConnector::Platform;
+            }
         }
 
         if(state == ECreateState::ConfirmItems) {
@@ -246,6 +398,7 @@ void RenderInterface() {
             UI::Text("Embedding the following items in the macroblock");
             UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
             UI::TextDisabled('It is recommended to only embed items from preset location: "zzz_ImportedItems/SetName/ItemName.Item.Gbx" when sharing parts.');
+            UI::TextDisabled("When sharing a MacroPart the custom items need to be in the exact same folder for everyone using it.");
             UI::PopTextWrapPos();
             UI::BeginChild("CustomItemsList", vec2(UI::GetWindowContentRegionWidth(), 150));
             for(int i = int(partDetails.embeddedItems.Length) - 1; i >= 0; i--) {
@@ -312,13 +465,18 @@ void RenderInterface() {
                 UI::EndCombo();
             }
 
-            partDetails.enterSpeed = UI::InputInt("Enter speed", partDetails.enterSpeed, 10);
-            partDetails.exitSpeed = UI::InputInt("Exit speed", partDetails.exitSpeed, 10);
+            if(partDetails.type != EPartType::Start)
+                partDetails.enterSpeed = UI::InputInt("Enter speed", partDetails.enterSpeed, 10);
+            if(partDetails.type != EPartType::Finish)
+                partDetails.exitSpeed = UI::InputInt("Exit speed", partDetails.exitSpeed, 10);
             partDetails.duration = UI::InputInt("Duration (seconds)", partDetails.duration);
-            UI::TextDisabled("Can you reach the end of this part starting with 0 speed?");
-            partDetails.respawnable = UI::Checkbox("Respawnable", partDetails.respawnable);
+            if(partDetails.type != EPartType::Start) {
+                UI::TextDisabled("Can you reach the end of this part starting with 0 speed?");
+                partDetails.respawnable = UI::Checkbox("Respawnable", partDetails.respawnable);
+            }
 
             if(UI::Button("Save MacroPart")) {
+                SaveMacroPart(selectedMacroBlock, partDetails);
                 state = ECreateState::Idle;
             }
         }
@@ -329,7 +487,6 @@ void RenderInterface() {
 }
 
 void Main2() {
-    const string macroblockFolder = "0MacroTrackGenerator"; //zzz_MacroTrackGenerator
 
     auto app = GetApp();
     auto editor = cast<CGameCtnEditorCommon>(app.Editor);
