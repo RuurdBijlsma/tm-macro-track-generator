@@ -1,17 +1,13 @@
 void Main() {
-    auto app = GetApp();
-    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
-    string relativeSaveLocation = "Stadium\\zzz_MacroTrackGenerator\\RuteNL_aassaasa_Part.Macroblock.Gbx";
-    print("Loading from relative location: " + relativeSaveLocation);
-    auto new = editor.PluginMapType.GetMacroblockModelFromFilePath(relativeSaveLocation);
-    print("New is null? " + (new is null));
+    
 }
 
 // todo:
-// we can't load macroblock from file witout game restart
-// dont save to new macroblock file, just updte existing macroblock file? howe?
-// use get block connect results to check for connector types? 
-// make it more general and save the block in the part details instead of econnector?
+// finish create macropart flow:
+// 1. Start
+// 2. "Save your macroblock to 'zzz_MacroTrackGenerator/decideaname.Macroblock.Gbx' by selecting blocks and clicking the save icon"
+// 3. do the thing with currently selected macroblock: editor.CurrentMacroBlockInfo
+// 4. Place it in the viewport while hiding all other blocks and do the rest of the user inputs
 // generate tracks lol
 
 enum ECreateState {
@@ -204,17 +200,62 @@ DirectedPosition@ FindMacroblockPlacement(CGameCtnMacroBlockInfo@ macroblock) {
     return null;
 }
 
-EConnector GetConnector(CGameCtnBlockInfo@ blockInfo) {
+bool BlockFitsInDirection(CGameCtnBlock@ block,  CGameCtnBlockInfo@ otherBlock, CGameEditorPluginMap::ECardinalDirections direction) {
+    if(block is null || otherBlock is null) return false;
+    auto app = GetApp();
+    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+    editor.PluginMapType.GetConnectResults(block, otherBlock);
+    auto results = editor.PluginMapType.ConnectResults;
+    for(uint i = 0; i < results.Length; i++) {
+        if(results[i].Dir == direction) {
+            if(results[i].CanPlace)
+                return true;
+            break;
+        }
+    }
+    return false;
+}
+
+EConnector GetConnector(CGameCtnBlock@ block, CGameEditorPluginMap::ECardinalDirections cursorDirection, bool isExit = false) {
+    auto app = GetApp();
+    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+
+    if(block is null) return EConnector::Platform;
+    auto blockInfo = block.BlockInfo;
     if(blockInfo is null || !blockInfo.PageName.Contains('/')) return EConnector::Platform;
+
+    // Try finding connection result with GetConnectResults
+    CGameCtnBlockInfo@[] testBlocks = {
+        editor.PluginMapType.GetBlockModelFromName('RoadTechStraight'),
+        editor.PluginMapType.GetBlockModelFromName('RoadDirtStraight'),
+        editor.PluginMapType.GetBlockModelFromName('RoadBumpStraight'),
+        editor.PluginMapType.GetBlockModelFromName('RoadIceStraight'),
+        editor.PluginMapType.GetBlockModelFromName('PlatformTechBase')
+    };
+    EConnector[] correspondingConnectors = {
+        EConnector::Platform,
+        EConnector::RoadDirt,
+        EConnector::RoadBump,
+        EConnector::RoadIce,
+        EConnector::Platform
+    };
+    for(uint i = 0; i < testBlocks.Length; i++) {
+        auto reverseDirection = CGameEditorPluginMap::ECardinalDirections((cursorDirection + 2) % 4);
+        auto fit = BlockFitsInDirection(block, testBlocks[i], isExit ? cursorDirection : reverseDirection);
+        if(fit) 
+            return correspondingConnectors[i];
+    }
+
+    // If nothing was found, try finding connection result by looking at block type
     auto rootPage = string(blockInfo.PageName).Split('/')[0];
     if(rootPage == 'RoadDirt')
         return EConnector::RoadDirt;
     if(rootPage == 'RoadBump')
         return EConnector::RoadBump;
     if(rootPage == 'RoadIce')
-        return EConnector::Bobsleigh;
+        return EConnector::RoadIce;
     if(rootPage == 'Walls')
-        return EConnector::Decowall;
+        return EConnector::DecoWall;
 
     // all other types are platform (road/platform/technics/terrain/water)
     return EConnector::Platform;
@@ -338,7 +379,7 @@ void RenderInterface() {
             }
             
             if(entranceBlock !is null) {
-                partDetails.entranceConnector = GetConnector(entranceBlock.BlockInfo);
+                partDetails.entranceConnector = GetConnector(entranceBlock, editor.PluginMapType.CursorDir);
                 auto tags = GetTags(entranceBlock.BlockInfo);
                 partDetails.AddTags(tags);
                 UI::TextDisabled("Connector: " + tostring(partDetails.entranceConnector));
@@ -374,7 +415,7 @@ void RenderInterface() {
                 editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CustomSelection;
             
             if(exitBlock !is null) {
-                partDetails.exitConnector = GetConnector(exitBlock.BlockInfo);
+                partDetails.exitConnector = GetConnector(exitBlock, editor.PluginMapType.CursorDir);
                 auto tags = GetTags(exitBlock.BlockInfo);
                 partDetails.AddTags(tags);
                 UI::TextDisabled("Connector: " + tostring(partDetails.exitConnector));
@@ -421,14 +462,9 @@ void RenderInterface() {
             partDetails.name = UI::InputText("Name", partDetails.name);
 
             if(UI::BeginCombo("Type", tostring(partDetails.type))) {
-                if(UI::Selectable("Start", partDetails.type == EPartType::Start)) 
-                    partDetails.type = EPartType::Start;
-                if(UI::Selectable("Part", partDetails.type == EPartType::Part)) 
-                    partDetails.type = EPartType::Part;
-                if(UI::Selectable("Finish", partDetails.type == EPartType::Finish)) 
-                    partDetails.type = EPartType::Finish;
-                if(UI::Selectable("Multilap", partDetails.type == EPartType::Multilap)) 
-                    partDetails.type = EPartType::Multilap;
+                for(uint i = 0; i < availableTypes.Length; i++) 
+                    if(UI::Selectable(tostring(availableTypes[i]), partDetails.type == availableTypes[i])) 
+                        partDetails.type = availableTypes[i];
                 UI::EndCombo();
             }
 
@@ -454,21 +490,42 @@ void RenderInterface() {
             }
 
             if(UI::BeginCombo("Difficulty", tostring(partDetails.difficulty))) {
-                if(UI::Selectable("Beginner", partDetails.difficulty == EDifficulty::Beginner)) 
-                    partDetails.difficulty = EDifficulty::Beginner;
-                if(UI::Selectable("Intermediate", partDetails.difficulty == EDifficulty::Intermediate)) 
-                    partDetails.difficulty = EDifficulty::Intermediate;
-                if(UI::Selectable("Advanced", partDetails.difficulty == EDifficulty::Advanced)) 
-                    partDetails.difficulty = EDifficulty::Advanced;
-                if(UI::Selectable("Expert", partDetails.difficulty == EDifficulty::Expert)) 
-                    partDetails.difficulty = EDifficulty::Expert;
+                for(uint i = 0; i < availableDifficulties.Length; i++) 
+                    if(UI::Selectable(tostring(availableDifficulties[i]), partDetails.difficulty == availableDifficulties[i])) 
+                        partDetails.difficulty = availableDifficulties[i];
                 UI::EndCombo();
             }
 
-            if(partDetails.type != EPartType::Start)
-                partDetails.enterSpeed = UI::InputInt("Enter speed", partDetails.enterSpeed, 10);
-            if(partDetails.type != EPartType::Finish)
-                partDetails.exitSpeed = UI::InputInt("Exit speed", partDetails.exitSpeed, 10);
+            if(partDetails.type != EPartType::Start) {
+                UI::PushID('entrance');
+                UI::TextDisabled("Entrance");
+                UI::SetNextItemWidth(122);
+                if(UI::BeginCombo("Connector", tostring(partDetails.entranceConnector))) {
+                    for(uint i = 0; i < availableConnectors.Length; i++) 
+                        if(UI::Selectable(tostring(availableConnectors[i]), partDetails.entranceConnector == availableConnectors[i])) 
+                            partDetails.entranceConnector = availableConnectors[i];
+                    UI::EndCombo();
+                }
+                UI::SameLine();
+                UI::SetNextItemWidth(125);
+                partDetails.enterSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.enterSpeed, 10), 0, 999);
+                UI::PopID();
+            }
+            if(partDetails.type != EPartType::Finish) {
+                UI::PushID('exit');
+                UI::TextDisabled("Exit");
+                UI::SetNextItemWidth(122);
+                if(UI::BeginCombo("Connector", tostring(partDetails.exitConnector))) {
+                    for(uint i = 0; i < availableConnectors.Length; i++) 
+                        if(UI::Selectable(tostring(availableConnectors[i]), partDetails.exitConnector == availableConnectors[i])) 
+                            partDetails.exitConnector = availableConnectors[i];
+                    UI::EndCombo();
+                }
+                UI::SameLine();
+                UI::SetNextItemWidth(125);
+                partDetails.exitSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.exitSpeed, 10), 0, 999);
+                UI::PopID();
+            }
             partDetails.duration = UI::InputInt("Duration (seconds)", partDetails.duration);
             if(partDetails.type != EPartType::Start) {
                 UI::TextDisabled("Can you reach the end of this part starting with 0 speed?");

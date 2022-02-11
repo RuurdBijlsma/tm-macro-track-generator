@@ -1,11 +1,9 @@
-string[]@ availableTags = {"FullSpeed", "Tech", "Mixed", "Nascar", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Road Bump", "RPG", "Race"};
-
 enum EConnector {
     Platform,
     RoadDirt,
-    Bobsleigh,
+    RoadIce,
     RoadBump,
-    Decowall
+    DecoWall
 };
 
 enum EPartType {
@@ -21,6 +19,11 @@ enum EDifficulty {
     Advanced, // tmgl
     Expert // crazy
 };
+
+string[]@ availableTags = {"FullSpeed", "Tech", "Mixed", "Nascar", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Road Bump", "RPG", "Race"};
+EConnector[]@ availableConnectors = {EConnector::Platform, EConnector::RoadDirt, EConnector::RoadIce, EConnector::RoadBump, EConnector::DecoWall};
+EPartType[]@ availableTypes = {EPartType::Start, EPartType::Finish, EPartType::Part, EPartType::Multilap};
+EDifficulty[]@ availableDifficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
 
 class MacroPartDetails {
     string name = "";
