@@ -1,5 +1,5 @@
 void Main() {
-    
+
 }
 
 // todo:
@@ -12,11 +12,14 @@ void Main() {
 
 enum ECreateState {
     Idle,
-    UserSelectMacro,
+    SelectBlocks,
+    SelectPlacement,
     SelectEntrance,
     SelectExit,
     ConfirmItems,
-    EnterDetails
+    EnterDetails,
+    SavedConfirmation,
+    Failed
 };
 
 bool windowOpen = true;
@@ -25,10 +28,13 @@ ECreateState state = ECreateState::Idle;
 bool copiedMap = false;
 bool altIsDown = false;
 
+string failureReason = "";
 DirectedPosition@ macroPlace = null;
 vec4 baseWindowColor = vec4(.1, .1, .1, 1);
 vec4 windowColor = baseWindowColor;
 MacroPartDetails@ partDetails = null;
+bool changedSaveAsFilename = false;
+string mbPath = "";
 
 CGameCtnBlock@ entranceBlock = null;
 CGameCtnBlock@ exitBlock = null;
@@ -42,8 +48,6 @@ void FocusCam(int x, int y, int z) {
     editor.PluginMapType.CameraTargetPosition.x = x * 32;
     editor.PluginMapType.CameraTargetPosition.y = y * 8;
     editor.PluginMapType.CameraTargetPosition.z = z * 32;
-    editor.PluginMapType.CameraVAngle = 0.5;
-    editor.PluginMapType.CameraHAngle = -2.7;
     editor.PluginMapType.Camera.ReleaseLock();
 }
 
@@ -93,8 +97,12 @@ bool OnKeyPress(bool down, VirtualKey key) {
     if(key == VirtualKey::Menu) {
         altIsDown = down;
     }
-    
-    if(state == ECreateState::UserSelectMacro && key == VirtualKey::V && down) {
+
+    return false;
+}
+
+bool OnMouseButton(bool down, int button, int x, int y) {
+    if(state == ECreateState::SelectPlacement && button == 0 && down && !altIsDown) {
         auto app = GetApp();
         auto editor = cast<CGameCtnEditorCommon>(app.Editor);
         auto coord = editor.PluginMapType.CursorCoord;
@@ -105,10 +113,6 @@ bool OnKeyPress(bool down, VirtualKey key) {
         return true;
     }
 
-    return false;
-}
-
-bool OnMouseButton(bool down, int button, int x, int y) {
     if(state == ECreateState::SelectEntrance && button == 0 && down && !altIsDown) {
         auto app = GetApp();
         auto editor = cast<CGameCtnEditorCommon>(app.Editor);
@@ -162,42 +166,6 @@ bool OnMouseButton(bool down, int button, int x, int y) {
     }
 
     return false;
-}
-
-DirectedPosition@ FindMacroblockPlacement(CGameCtnMacroBlockInfo@ macroblock) {
-    auto app = GetApp();
-    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
-    auto mapSize = editor.Challenge.Size;
-    auto macroblockSize = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
-    auto placeDir = CGameEditorPluginMap::ECardinalDirections::West;
-
-    // Test placing in center of the map first (to not destroy items in the macroblock)
-    auto placePoint = DirectedPosition(
-        mapSize.x / 2 - macroblockSize.x / 2,
-        mapSize.y / 2 - macroblockSize.y / 2,
-        mapSize.z / 2 - macroblockSize.z / 2,
-        placeDir
-    );
-    auto canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, placePoint.position, placePoint.direction);
-    if(canPlace) 
-        return placePoint;
-
-    mapSize.x -= macroblockSize.x;
-    mapSize.y -= macroblockSize.y;
-    mapSize.z -= macroblockSize.z;
-    // have same amount of loops regardless of map size (step = 2 for normal sized map)
-    int step = (mapSize.x * mapSize.y * mapSize.z) / (48 * 40 * 48) + 1;
-    for(uint x = 0; x < mapSize.x; x += step) {
-        for(uint y = 0; y < mapSize.y; y += step) {
-            for(uint z = 0; z < mapSize.z; z += step) {
-                @placePoint = DirectedPosition(x, y, z, placeDir);
-                canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, placePoint.position, placePoint.direction);
-                if(canPlace) 
-                    return placePoint;
-            }
-        }
-    }
-    return null;
 }
 
 bool BlockFitsInDirection(CGameCtnBlock@ block,  CGameCtnBlockInfo@ otherBlock, CGameEditorPluginMap::ECardinalDirections direction) {
@@ -304,7 +272,8 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos, bool focusCam = true) {
         copiedMap = true;
     }
     if(dirPos is null) {
-        state = ECreateState::Idle;
+        state = ECreateState::Failed;
+        failureReason = "Failed to find placement position for macro.";
         warn("Failed to place macro!");
     } else {
         editor.PluginMapType.PlaceMacroblock_AirMode(selectedMacroBlock, dirPos.position, dirPos.direction);
@@ -312,6 +281,29 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos, bool focusCam = true) {
             FocusCam(dirPos.x, dirPos.y, dirPos.z);
         state = ECreateState::SelectEntrance;
         windowColor = vec4(1./255, 30./255, 1./255, 1);
+    }
+}
+
+void SelectNewMacroblock() {
+    auto maxWait = 1000;
+    while(true) {
+        auto app = GetApp();
+        auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+        auto mbPathW = wstring("Stadium\\" + mbPath.Replace('/', '\\')) + ".Macroblock.Gbx";
+        print(mbPathW);
+        auto mb = editor.PluginMapType.GetMacroblockModelFromFilePath(mbPathW);
+        print("Mb isnull? " + (mb is null));
+        yield();
+        if(maxWait-- < 0) {
+            failureReason = "Failed to get newly saved macroblock";
+            state = ECreateState::Failed;
+            break;
+        }
+        if(mb !is null) {
+            state = ECreateState::SelectPlacement;
+            @selectedMacroBlock = mb;
+            break;
+        };
     }
 }
 
@@ -325,6 +317,13 @@ void RenderInterface() {
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
     UI::SetNextWindowSize(500, 330);
     if(UI::Begin("Create MacroPart", windowOpen)) {
+        if(state == ECreateState::Failed) {
+            UI::Text("Something went wrong!");
+            UI::Text(failureReason);
+            if(UI::Button("Go back")) {
+                state = ECreateState::Idle;
+            }
+        }
 
         if(state == ECreateState::Idle) {
             if(UI::Button("Start")) {
@@ -338,25 +337,42 @@ void RenderInterface() {
                 copiedMap = false;
                 @selectedMacroBlock = null;
                 @macroPlace = null;
+                changedSaveAsFilename = false;
 
-                state = ECreateState::UserSelectMacro;
-                editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
+                state = ECreateState::SelectBlocks;
+                editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CopyPaste;
             }
         }
-        if(state == ECreateState::UserSelectMacro) {
-            UI::Text("Select the macroblock");
-            auto editor = cast<CGameCtnEditorCommon>(app.Editor);
-            @selectedMacroBlock = editor.CurrentMacroBlockInfo;
-            if(selectedMacroBlock !is null) {
-                UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
-                UI::TextDisabled('Selected macroblock: "' + selectedMacroBlock.IdName + '"');
-                UI::Text('Press "V" to use the curretly selected macroblock.');
-                UI::PopTextWrapPos();
-                if(UI::Button("Use selected macroblock")) {
-                    @macroPlace = FindMacroblockPlacement(selectedMacroBlock);
-                    PlaceUserMacroblock(macroPlace);
+        if(state == ECreateState::SelectBlocks) {
+            
+            auto currentFrame = app.BasicDialogs.Dialogs.CurrentFrame;
+            if(currentFrame !is null && currentFrame.IdName == 'FrameDialogSaveAs') {
+                if(!changedSaveAsFilename) {
+                    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+                    auto timeString = Time::FormatString("%Y%m%d-%H%M%S", Time::get_Stamp());
+                    auto filename = "MTG-" + partDetails.author + "-" + timeString;
+                    mbPath = macroblockFolder + "/" + filename;
+                    app.BasicDialogs.String = mbPath;
+                    app.BasicDialogs.DialogSaveAs_OnValidate();
+                    app.BasicDialogs.DialogSaveAs_OnValidate();
+                    changedSaveAsFilename = true;
+                    startnew(SelectNewMacroblock);
                 }
+            } else {
+                UI::Text("Select the blocks for this part, click the " + Icons::Kenney::Save + " icon when done.");
+                UI::TextDisabled("Only use floating blocks or items.");
+                UI::TextDisabled("Don't select ground blocks.");
+                auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+                auto selectCount = editor.PluginMapType.CopyPaste_GetSelectedCoordsCount();
+                UI::Text("Selection size: " + selectCount);
             }
+        }
+
+        if(state == ECreateState::SelectPlacement) {
+            UI::Text("Click to place the macroblock in the map. It will not destroy any existing blocks.");
+            UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
+            UI::TextDisabled("Take care not to place it too close to the map border, or custom items may get destroyed.");
+            UI::PopTextWrapPos();
         }
 
         if(state == ECreateState::SelectEntrance) {
@@ -373,10 +389,8 @@ void RenderInterface() {
             auto editor = cast<CGameCtnEditorCommon>(app.Editor);
             auto c = editor.PluginMapType.CursorCoord;
             @entranceBlock = editor.PluginMapType.GetBlock(int3(c.x, c.y, c.z));
-            if(editor.PluginMapType.PlaceMode != CGameEditorPluginMap::EPlaceMode::CustomSelection) {
-                print("Setting placemode");
+            if(editor.PluginMapType.PlaceMode != CGameEditorPluginMap::EPlaceMode::CustomSelection)
                 editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CustomSelection;
-            }
             
             if(entranceBlock !is null) {
                 partDetails.entranceConnector = GetConnector(entranceBlock, editor.PluginMapType.CursorDir);
@@ -534,10 +548,22 @@ void RenderInterface() {
 
             if(UI::Button("Save MacroPart")) {
                 SaveMacroPart(selectedMacroBlock, partDetails);
+                state = ECreateState::SavedConfirmation;
+            }
+        }
+        
+        if(state == ECreateState::SavedConfirmation) {
+            UI::Text(Icons::Check + " Created MacroPart!");
+            if(UI::GreenButton("Ok")) {
                 state = ECreateState::Idle;
             }
         }
     }
+
+    if(state != ECreateState::Idle && state != ECreateState::SavedConfirmation && UI::OrangeButton("Cancel creating MacroPart")) {
+        state = ECreateState::Idle;
+    }
+
     UI::End();
     UI::PopStyleVar(4);
     UI::PopStyleColor(1);

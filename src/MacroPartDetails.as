@@ -37,7 +37,7 @@ class MacroPartDetails {
 
     int enterSpeed = 100;
     int exitSpeed = 200;
-    int duration = 10;
+    int duration = 5;
     bool respawnable = false;
     EPartType type = EPartType::Part;
     EDifficulty difficulty = EDifficulty::Intermediate;
