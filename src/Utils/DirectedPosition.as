@@ -21,3 +21,14 @@ class DirectedPosition{
         return x + "," + y + "," + z + "," + int(direction);
     }
 };
+
+namespace DirectedPosition {
+DirectedPosition@ FromString(string input) {
+    auto parts = input.Split(",");
+    int x = Text::ParseInt(parts[0]);
+    int y = Text::ParseInt(parts[1]);
+    int z = Text::ParseInt(parts[2]);
+    auto direction = CGameEditorPluginMap::ECardinalDirections(Text::ParseInt(parts[3]));
+    return DirectedPosition(x, y, z, direction);
+}
+}

@@ -1,3 +1,5 @@
+namespace Create{
+
 string GetTrackmaniaFolder() {
     auto documents = IO::FromDataFolder("").Split('/Openplanet')[0] + "\\Documents";
     string itemsFolder;
@@ -11,9 +13,9 @@ string GetTrackmaniaFolder() {
 
 string GetItemsFolder() {return GetTrackmaniaFolder() + "Items/";}
 
-const string macroblockFolder = "zzz_MacroTrackGenerator"; //zzz_MacroTrackGenerator
+string GetBlocksFolder() {return GetTrackmaniaFolder() + "Blocks/";}
 
-void SaveMacroPart(CGameCtnMacroBlockInfo@ macroblock, MacroPartDetails@ partDetails) {
+void SaveMacroPart(CGameCtnMacroBlockInfo@ macroblock, MacroPart@ partDetails) {
     string base64Items = "";
     for(uint i = 0; i < partDetails.embeddedItems.Length; i++) {
         auto relItemPath = partDetails.embeddedItems[i];
@@ -23,11 +25,13 @@ void SaveMacroPart(CGameCtnMacroBlockInfo@ macroblock, MacroPartDetails@ partDet
         auto buffer = file.Read(file.Size());
         file.Close();
         // base64 does not use |, so use it as separator again
-        if(i != 0) base64Items += "|";
+        if(i != 0) base64Items += MacroPart::DetailSeparator;
         base64Items += buffer.ReadToBase64(buffer.GetSize());
     }
-    macroblock.Description = partDetails.ToString() + "|||||" + base64Items;
+    macroblock.Description = partDetails.ToString() + MacroPart::BaseSeparator + base64Items;
     auto app = GetApp();
     auto editor = cast<CGameCtnEditorCommon>(app.Editor);
     editor.PluginMapType.SaveMacroblock(macroblock);
+}
+
 }
