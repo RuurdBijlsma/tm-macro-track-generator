@@ -12,6 +12,7 @@ enum EState {
     Failed
 };
 
+bool isEditing = false;
 bool windowOpen = true;
 CGameCtnMacroBlockInfo@ selectedMacroBlock = null;
 EState state = EState::Idle;
@@ -88,20 +89,38 @@ bool OnKeyPress(bool down, VirtualKey key) {
         altIsDown = down;
     }
 
+    if(state == EState::SelectPlacement && key == VirtualKey::V && down) {
+        return UserPlaceMacroblockAtCursor();
+    }
+
     return false;
 }
 
+bool UserPlaceMacroblockAtCursor() {
+    auto app = GetApp();
+    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+    if(isEditing) {
+        if(editor.CurrentMacroBlockInfo is null) 
+            return false;
+        @selectedMacroBlock = editor.CurrentMacroBlockInfo;
+        @partDetails = MacroPart::FromMacroblock(selectedMacroBlock);
+        if(partDetails is null) {
+            warn("MacroPart selected for editing is invalid.");
+            @partDetails = MacroPart();
+        }
+    }
+    print("Click place!");
+    auto coord = editor.PluginMapType.CursorCoord;
+    auto dir = editor.PluginMapType.CursorDir;
+    @macroPlace = DirectedPosition(coord.x, coord.y, coord.z, dir);
+    // placeusermacroblock changes state, so this doesn't get repeatedly called
+    PlaceUserMacroblock(macroPlace, false);
+    return true;
+}
+
 bool OnMouseButton(bool down, int button, int x, int y) {
-    if(state == EState::SelectPlacement && button == 0 && down && !altIsDown) {
-        print("Click place!");
-        auto app = GetApp();
-        auto editor = cast<CGameCtnEditorCommon>(app.Editor);
-        auto coord = editor.PluginMapType.CursorCoord;
-        auto dir = editor.PluginMapType.CursorDir;
-        @macroPlace = DirectedPosition(coord.x, coord.y, coord.z, dir);
-        // placeusermacroblock changes state, so this doesn't get repeatedly called
-        PlaceUserMacroblock(macroPlace, false);
-        return true;
+    if(!isEditing && state == EState::SelectPlacement && button == 0 && down && !altIsDown) {
+        return UserPlaceMacroblockAtCursor();
     }
 
     if(state == EState::SelectEntrance && button == 0 && down && !altIsDown) {
@@ -325,7 +344,11 @@ void RenderInterface() {
         }
 
         if(state == EState::Idle) {
-            if(UI::Button("Start")) {
+            UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
+            UI::Text("Randomly generated tracks consist of 'MacroParts'. These are macroblocks with some extra information embedded in them to help the generator connect parts together.");
+            UI::TextDisabled("Your available MacroParts can be found in the macroblocks tab below (F4), in the folder '" + macroPartFolder + "'.");
+            UI::PopTextWrapPos();            
+            if(UI::Button("Create new MacroPart")) {
                 auto editor = cast<CGameCtnEditorCommon>(app.Editor);
                 // Reset variables
                 @partDetails = MacroPart();
@@ -338,10 +361,25 @@ void RenderInterface() {
                 @macroPlace = null;
                 changedSaveAsFilename = false;
 
-                state = EState::SelectBlocks;
                 editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CopyPaste;
+                isEditing = false;
+                state = EState::SelectBlocks;
+            }
+            if(UI::Button("Edit existing MacroPart")) {
+                auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+                // Reset variables
+                @partDetails = null;
+                copiedMap = false;
+                @selectedMacroBlock = null;
+                @macroPlace = null;
+                changedSaveAsFilename = false;
+
+                editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
+                isEditing = true;
+                state = EState::SelectPlacement;
             }
         }
+
         if(state == EState::SelectBlocks) {
             
             auto currentFrame = app.BasicDialogs.Dialogs.CurrentFrame;
@@ -350,7 +388,7 @@ void RenderInterface() {
                     auto editor = cast<CGameCtnEditorCommon>(app.Editor);
                     auto timeString = Time::FormatString("%Y%m%d-%H%M%S", Time::get_Stamp());
                     auto filename = "MTG-" + partDetails.author + "-" + timeString;
-                    mbPath = macroblockFolder + "/" + filename;
+                    mbPath = macroPartFolder + "/" + filename;
                     app.BasicDialogs.String = mbPath;
                     app.BasicDialogs.DialogSaveAs_OnValidate();
                     app.BasicDialogs.DialogSaveAs_OnValidate();
@@ -368,9 +406,15 @@ void RenderInterface() {
         }
 
         if(state == EState::SelectPlacement) {
-            UI::Text("Click to place the macroblock in the map. It will not destroy any existing blocks.");
             UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
-            UI::TextDisabled("Take care not to place it too close to the map border, or custom items may get destroyed.");
+            if(isEditing) {
+                state = EState::SelectPlacement;
+                UI::Text("Select the MacroPart to edit.");
+                UI::Text("Press 'V' to place the macroblock in the map. It will not destroy any existing blocks.");
+            } else {
+                UI::Text("Click to place the macroblock in the map. It will not destroy any existing blocks.");
+            }
+            UI::TextDisabled("Take care not to place it too close to the map border, or custom items may not get placed.");
             UI::PopTextWrapPos();
         }
 
@@ -560,6 +604,7 @@ void RenderInterface() {
     }
 
     if(state != EState::Idle && state != EState::SavedConfirmation && UI::OrangeButton("Cancel creating MacroPart")) {
+        windowColor = baseWindowColor;
         state = EState::Idle;
     }
 

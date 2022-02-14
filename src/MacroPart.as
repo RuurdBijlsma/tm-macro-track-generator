@@ -122,6 +122,8 @@ MacroPart@ FromMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
         @result.macroblock = macroblock;
     } else {
         warn("MacroPart version not supported.");
+        // MacroPart@ a = null;
+        // print(a.name);
     }
 
     return result;

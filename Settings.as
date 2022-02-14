@@ -1,2 +1,2 @@
 [Setting name="MacroPart folder"]
-string macroblockFolder = "zzz_MacroTrackGenerator"; //zzz_MacroTrackGenerator
+string macroPartFolder = "zzz_MacroTrackGenerator"; //zzz_MacroTrackGenerator
