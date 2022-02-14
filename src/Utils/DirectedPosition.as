@@ -20,6 +20,17 @@ class DirectedPosition{
     string ToString() {
         return x + "," + y + "," + z + "," + int(direction);
     }
+
+    void MoveForward(int steps = 1) {
+        if(direction == CGameEditorPluginMap::ECardinalDirections::North)
+            z += steps;
+        else if(direction == CGameEditorPluginMap::ECardinalDirections::East)
+            x -= steps;
+        else if(direction == CGameEditorPluginMap::ECardinalDirections::South)
+            z -= steps;
+        else if(direction == CGameEditorPluginMap::ECardinalDirections::West)
+            x += steps;
+    }
 };
 
 namespace DirectedPosition {

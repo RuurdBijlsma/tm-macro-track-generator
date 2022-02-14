@@ -39,16 +39,15 @@ class SpiralOut{
     }
 };
 
-void ShuffleParts(MacroPart@[] parts){
+void ShuffleParts(MacroPart@[]@ parts){
     int m = int(parts.Length);
-    int i;
     // While there remain elements to shuffle…
     while (m > 0) {
         // Pick a remaining element…
-        i = Math::Rand(0, m--);
+        int i = Math::Rand(0, m--);
         // And swap it with the current element.
         auto t = parts[m];
-        parts[m] = parts[i];
-        parts[i] = t;
+        @parts[m] = parts[i];
+        @parts[i] = t;
     }
 }

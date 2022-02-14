@@ -44,7 +44,6 @@ void FocusCam(int x, int y, int z) {
 
 // get position of cursor position relative to macroblock's north arrow
 DirectedPosition@ ToRelativePosition(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ mbPosition, DirectedPosition@ cursor) {
-    int rotation;
     auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
     DirectedPosition result;
     if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::North) {
@@ -280,15 +279,21 @@ string[]@ GetTags(CGameCtnBlockInfo@ blockInfo) {
     return result;
 }
 
-void PlaceUserMacroblock(DirectedPosition@ dirPos, bool focusCam = true) {
+bool CutMap() {
     auto app = GetApp();
     auto editor = cast<CGameCtnEditorCommon>(app.Editor);
     editor.PluginMapType.CopyPaste_SelectAll();
-    print("Count: " + editor.PluginMapType.CopyPaste_GetSelectedCoordsCount());
     if(editor.PluginMapType.CopyPaste_GetSelectedCoordsCount() != 0) {
         editor.PluginMapType.CopyPaste_Cut();
-        copiedMap = true;
+        return true;
     }
+    return false;
+}
+
+void PlaceUserMacroblock(DirectedPosition@ dirPos, bool focusCam = true) {
+    auto app = GetApp();
+    auto editor = cast<CGameCtnEditorCommon>(app.Editor);
+    copiedMap = CutMap();
     if(dirPos is null) {
         state = EState::Failed;
         failureReason = "Failed to find placement position for macro.";
