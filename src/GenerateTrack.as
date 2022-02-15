@@ -86,69 +86,30 @@ class Generate {
         auto starts = FilterParts(EPartType::Start);
         auto parts = FilterParts(EPartType::Part);
         auto start = starts[0];
-        auto part = parts[0];
+        auto part = parts[1];
         print("Trying to connect start: " + start.name + " + part: " + part.name);
 
         auto startPos = FindStartPosition(start.macroblock);
         editor.PluginMapType.PlaceMacroblock_AirMode(start.macroblock, startPos.position, startPos.direction);
         auto startExitPos = ToAbsolutePosition(start.macroblock, startPos, start.exit);
-        print(startExitPos.ToString());
 
         auto partEntrancePos = DirectedPosition(startExitPos.x, startExitPos.y, startExitPos.z, startExitPos.direction);
         // shift 1 forward to get entrance position of next part
         partEntrancePos.MoveForward();
         print("part entrance pos: " + partEntrancePos.ToString());
+        print("part rel start pos: " + part.entrance.ToString());
         auto partPlacementDirection = CGameEditorPluginMap::ECardinalDirections((partEntrancePos.direction - part.entrance.direction + 4) % 4);
         print(tostring(partPlacementDirection));
-        // lmao good luck buckaroo
+
+        // we need different behaviour depending on the value of partPlacementDirection
+        auto northArrow = DirectedPosition::Subtract(partEntrancePos, part.entrance);
+        print("northArrow: " + northArrow.ToString());
     }
 
     DirectedPosition@ ToAbsolutePosition(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ mbPosition, DirectedPosition@ relativePosition) {
         DirectedPosition@ result = null;
-        auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
-        auto newDirection = CGameEditorPluginMap::ECardinalDirections((mbPosition.direction + relativePosition.direction) % 4);
-
-        if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::North) {
-            @result = DirectedPosition(
-                mbPosition.x + relativePosition.x,
-                mbPosition.y + relativePosition.y,
-                mbPosition.z + relativePosition.z,
-                newDirection
-            );
-        }
-        if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::East) {
-            // without the -1 the north arrow placement would be outside the box of the macroblock, which is incorrect
-            auto northArrow = DirectedPosition(mbPosition.x + size.z - 1, mbPosition.y, mbPosition.z);
-            @result = DirectedPosition(
-                northArrow.x - relativePosition.z,
-                northArrow.y + relativePosition.y,
-                northArrow.z + relativePosition.x,
-                newDirection
-            );
-        }
-        if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::South) {
-            // without the -1 the north arrow placement would be outside the box of the macroblock, which is incorrect
-            auto northArrow = DirectedPosition(mbPosition.x + size.x - 1, mbPosition.y, mbPosition.z + size.z - 1);
-            @result = DirectedPosition(
-                northArrow.x - relativePosition.x,
-                northArrow.y + relativePosition.y,
-                northArrow.z - relativePosition.z,
-                newDirection
-            );
-        }
-        if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::West) {
-            // without the -1 the north arrow placement would be outside the box of the macroblock, which is incorrect
-            auto northArrow = DirectedPosition(mbPosition.x, mbPosition.y, mbPosition.z + size.x - 1);
-            print("northArrow: " + northArrow.ToString());
-            print("relativePosition: " + relativePosition.ToString());
-            @result = DirectedPosition(
-                northArrow.x + relativePosition.z,
-                northArrow.y + relativePosition.y,
-                northArrow.z - relativePosition.x,
-                newDirection
-            );
-        }
-        return result;
+        DirectedPosition@ northArrow = Create::GetNorthArrow(macroblock, mbPosition);
+        return DirectedPosition::Add(northArrow, relativePosition);
     }
 
     MacroPart@[]@ FilterParts(const EPartType &in type) {

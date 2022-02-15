@@ -42,45 +42,31 @@ void FocusCam(int x, int y, int z) {
     editor.PluginMapType.Camera.ReleaseLock();
 }
 
-// get position of cursor position relative to macroblock's north arrow
-DirectedPosition@ ToRelativePosition(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ mbPosition, DirectedPosition@ cursor) {
+DirectedPosition@ GetNorthArrow(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ mbPosition) {
     auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
-    DirectedPosition result;
     if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::North) {
-        // north arrow = cursor, because mb is placed facing north
-        result.x = cursor.x - mbPosition.x;
-        result.y = cursor.y - mbPosition.y;
-        result.z = cursor.z - mbPosition.z;
-        result.direction = cursor.direction;
+        return mbPosition;
     }
     if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::East) {
         // without the -1 the north arrow placement would be outside the box of the macroblock, which is incorrect
-        auto northArrow = DirectedPosition(mbPosition.x + size.z - 1, mbPosition.y, mbPosition.z);
-        // flip x,z calculation because the macroblock aims east
-        result.x = cursor.z - northArrow.z;
-        result.y = cursor.y - northArrow.y;
-        result.z = northArrow.x - cursor.x;
-        result.direction = CGameEditorPluginMap::ECardinalDirections((cursor.direction + 3) % 4);
+        return DirectedPosition(mbPosition.x + size.z - 1, mbPosition.y, mbPosition.z, mbPosition.direction);
     }
     if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::South) {
         // without the -1 the north arrow placement would be outside the box of the macroblock, which is incorrect
-        auto northArrow = DirectedPosition(mbPosition.x + size.x - 1, mbPosition.y, mbPosition.z + size.z - 1);
-        // mb aims south
-        result.x = northArrow.x - cursor.x;
-        result.y = cursor.y - northArrow.y;
-        result.z = northArrow.z - cursor.z;
-        result.direction = CGameEditorPluginMap::ECardinalDirections((cursor.direction + 2) % 4);
+        return DirectedPosition(mbPosition.x + size.x - 1, mbPosition.y, mbPosition.z + size.z - 1, mbPosition.direction);
     }
     if(mbPosition.direction == CGameEditorPluginMap::ECardinalDirections::West) {
         // without the -1 the north arrow placement would be outside the box of the macroblock, which is incorrect
-        auto northArrow = DirectedPosition(mbPosition.x, mbPosition.y, mbPosition.z + size.x - 1);
-        // flip x,z calculation because the macroblock aims west
-        result.x = northArrow.z - cursor.z;
-        result.y = cursor.y - northArrow.y;
-        result.z = cursor.x - northArrow.x;
-        result.direction = CGameEditorPluginMap::ECardinalDirections((cursor.direction + 1) % 4);
+        return DirectedPosition(mbPosition.x, mbPosition.y, mbPosition.z + size.x - 1, mbPosition.direction);
     }
-    return result;
+    return null;
+}
+
+// get position of cursor position relative to macroblock's north arrow
+DirectedPosition@ ToRelativePosition(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ mbPosition, DirectedPosition@ cursor) {
+    auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
+    DirectedPosition@ northArrow = GetNorthArrow(macroblock, mbPosition);
+    return DirectedPosition::Subtract(cursor, northArrow, northArrow.direction);
 }
 
 bool OnKeyPress(bool down, VirtualKey key) {
@@ -146,8 +132,9 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         auto anchoredObjects = editor.Challenge.AnchoredObjects;
         for(uint i = 0; i < anchoredObjects.Length; i++) {
             auto itemPath = anchoredObjects[i].ItemModel.IdName;
-            if(itemPath.EndsWith(".Item.Gbx") && partDetails.embeddedItems.Find(itemPath) == -1)
+            if(itemPath.EndsWith(".Item.Gbx") && partDetails.embeddedItems.Find(itemPath) == -1){
                 partDetails.embeddedItems.InsertLast(itemPath);
+            }
         }
         auto blocks = editor.Challenge.Blocks;
         for(uint i = 0; i < blocks.Length; i++) {

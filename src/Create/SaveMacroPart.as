@@ -20,6 +20,7 @@ void SaveMacroPart(CGameCtnMacroBlockInfo@ macroblock, MacroPart@ partDetails) {
     for(uint i = 0; i < partDetails.embeddedItems.Length; i++) {
         auto relItemPath = partDetails.embeddedItems[i];
         auto itemPath = GetItemsFolder() + relItemPath;
+        print("itemPath: " + itemPath);
         IO::File file(itemPath);
         file.Open(IO::FileMode::Read);
         auto buffer = file.Read(file.Size());

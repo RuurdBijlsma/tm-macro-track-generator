@@ -14,10 +14,10 @@ enum EPartType {
 };
 
 enum EDifficulty {
-    Beginner, // ez cotd
-    Intermediate, // hard cotd
-    Advanced, // tmgl
-    Expert // crazy
+    Beginner,
+    Intermediate,
+    Advanced,
+    Expert
 };
 
 string[]@ availableTags = {"FullSpeed", "Tech", "Mixed", "Nascar", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Road Bump", "RPG", "Race"};
@@ -105,8 +105,8 @@ MacroPart@ FromMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
         @result.exit = DirectedPosition::FromString(details[4]);
         result.entranceConnector = EConnector(Text::ParseInt(details[5]));
         result.exitConnector = EConnector(Text::ParseInt(details[6]));
-        result.embeddedItems = details[7].Split(",");
-        string[] tags = details[8].Split(",");
+        result.embeddedItems = details[7].Split(":");
+        string[] tags = details[8].Split(":");
         // filter invalid tags
         for(int i = int(tags.Length) - 1; i >= 0; i--) {
             if(availableTags.Find(tags[i]) == -1)
