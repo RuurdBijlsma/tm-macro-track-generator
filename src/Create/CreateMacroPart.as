@@ -66,7 +66,7 @@ DirectedPosition@ GetNorthArrow(CGameCtnMacroBlockInfo@ macroblock, DirectedPosi
 DirectedPosition@ ToRelativePosition(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ mbPosition, DirectedPosition@ cursor) {
     auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
     DirectedPosition@ northArrow = GetNorthArrow(macroblock, mbPosition);
-    return DirectedPosition::Subtract(cursor, northArrow, northArrow.direction);
+    return DirectedPosition::Subtract(cursor, northArrow);
 }
 
 bool OnKeyPress(bool down, VirtualKey key) {

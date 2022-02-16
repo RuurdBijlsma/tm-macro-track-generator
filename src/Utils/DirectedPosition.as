@@ -79,7 +79,7 @@ DirectedPosition@ Subtract(DirectedPosition@ pos1, DirectedPosition@ pos2) {
     if(pos1 is null || pos2 is null) return null;
     auto newDirection = CGameEditorPluginMap::ECardinalDirections((pos1.direction - pos2.direction + 4) % 4);
 
-    if(pos2 == CGameEditorPluginMap::ECardinalDirections::North) {
+    if(pos2.direction == CGameEditorPluginMap::ECardinalDirections::North) {
         return DirectedPosition(
             pos1.x - pos2.x,
             pos1.y - pos2.y,
@@ -87,7 +87,7 @@ DirectedPosition@ Subtract(DirectedPosition@ pos1, DirectedPosition@ pos2) {
             newDirection
         );
     }
-    if(pos2 == CGameEditorPluginMap::ECardinalDirections::East) {
+    if(pos2.direction == CGameEditorPluginMap::ECardinalDirections::East) {
         return DirectedPosition(
             pos1.z - pos2.z,
             pos1.y - pos2.y,
@@ -95,7 +95,7 @@ DirectedPosition@ Subtract(DirectedPosition@ pos1, DirectedPosition@ pos2) {
             newDirection
         );
     }
-    if(pos2 == CGameEditorPluginMap::ECardinalDirections::South) {
+    if(pos2.direction == CGameEditorPluginMap::ECardinalDirections::South) {
         return DirectedPosition(
             pos2.x - pos1.x,
             pos1.y - pos2.y,
@@ -103,7 +103,7 @@ DirectedPosition@ Subtract(DirectedPosition@ pos1, DirectedPosition@ pos2) {
             newDirection
         );
     }
-    if(pos2 == CGameEditorPluginMap::ECardinalDirections::West) {
+    if(pos2.direction == CGameEditorPluginMap::ECardinalDirections::West) {
         return DirectedPosition(
             pos2.z - pos1.z,
             pos1.y - pos2.y,
@@ -112,6 +112,14 @@ DirectedPosition@ Subtract(DirectedPosition@ pos1, DirectedPosition@ pos2) {
         );
     }
     return null;
+}
+DirectedPosition@ MultiplyScalar(DirectedPosition@ pos, float scalar) {
+    return DirectedPosition(
+        pos.x * scalar,
+        pos.y * scalar,
+        pos.z * scalar,
+        pos.direction
+    );
 }
 
 DirectedPosition@ FromString(string input) {

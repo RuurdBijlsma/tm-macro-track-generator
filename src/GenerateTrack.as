@@ -38,12 +38,50 @@ class Generate {
         return macroParts;
     }
 
+    DirectedPosition@ GetNorthArrowFromRelativePosition(DirectedPosition@ absPosition, DirectedPosition@ relativePosition) {
+        // absPosition is absolute position of entrance or exit of MacroPart
+        // relativePosition is part.entrance or part.exit
+        // we need different behaviour depending on the value of partPlacementDirection
+        auto partPlacementDirection = CGameEditorPluginMap::ECardinalDirections((absPosition.direction - relativePosition.direction + 4) % 4);
+        // north arrow is different depending on part placement direction, so calculation of north arrow also has to change
+        if(partPlacementDirection == CGameEditorPluginMap::ECardinalDirections::South) {
+            return DirectedPosition(
+                absPosition.x + relativePosition.x,
+                absPosition.y - relativePosition.y,
+                absPosition.z + relativePosition.z,
+                partPlacementDirection
+            );
+        } else if(partPlacementDirection == CGameEditorPluginMap::ECardinalDirections::West) {
+            return DirectedPosition(
+                absPosition.x - relativePosition.z,
+                absPosition.y - relativePosition.y,
+                absPosition.z + relativePosition.x,
+                partPlacementDirection
+            );
+        } else if(partPlacementDirection == CGameEditorPluginMap::ECardinalDirections::East) {
+            return DirectedPosition(
+                absPosition.x + relativePosition.z,
+                absPosition.y - relativePosition.y,
+                absPosition.z - relativePosition.x,
+                partPlacementDirection
+            );
+        } else if(partPlacementDirection == CGameEditorPluginMap::ECardinalDirections::North) {
+            return DirectedPosition(
+                absPosition.x - relativePosition.x,
+                absPosition.y - relativePosition.y,
+                absPosition.z - relativePosition.z,
+                partPlacementDirection
+            );
+        }
+        return null;
+    }
+
     DirectedPosition@ FindStartPosition(CGameCtnMacroBlockInfo@ macroblock) {
         auto app = GetApp();
         auto editor = cast<CGameCtnEditorCommon>(app.Editor);
         auto mapSize = editor.Challenge.Size;
         auto macroblockSize = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
-        auto placeDir = CGameEditorPluginMap::ECardinalDirections::West;
+        auto placeDir = CGameEditorPluginMap::ECardinalDirections::South;
         auto startX = mapSize.x / 2 - macroblockSize.x / 2;
         auto startY = mapSize.y / 2 - macroblockSize.y / 2;
         auto startZ = mapSize.z / 2 - macroblockSize.z / 2;
@@ -74,6 +112,26 @@ class Generate {
         return null;
     }
 
+    DirectedPosition@ NorthArrowToCursor(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ northArrow) {
+        auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
+        if(northArrow.direction == CGameEditorPluginMap::ECardinalDirections::North) {
+            return northArrow;
+        }
+        if(northArrow.direction == CGameEditorPluginMap::ECardinalDirections::East) {
+            // without the +1 the cursor placement would be outside the box of the macroblock, which is incorrect
+            return DirectedPosition(northArrow.x - size.z + 1, northArrow.y, northArrow.z, northArrow.direction);
+        }
+        if(northArrow.direction == CGameEditorPluginMap::ECardinalDirections::South) {
+            // without the +1 the cursor placement would be outside the box of the macroblock, which is incorrect
+            return DirectedPosition(northArrow.x - size.x + 1, northArrow.y, northArrow.z - size.z + 1, northArrow.direction);
+        }
+        if(northArrow.direction == CGameEditorPluginMap::ECardinalDirections::West) {
+            // without the +1 the cursor placement would be outside the box of the macroblock, which is incorrect
+            return DirectedPosition(northArrow.x, northArrow.y, northArrow.z - size.x + 1, northArrow.direction);
+        }
+        return null;
+    }
+
     void GenerateTrack() {
         if(allParts.Length == 0) {
             warn("No MacroParts found to generate a track with!");
@@ -86,7 +144,7 @@ class Generate {
         auto starts = FilterParts(EPartType::Start);
         auto parts = FilterParts(EPartType::Part);
         auto start = starts[0];
-        auto part = parts[1];
+        auto part = parts[3];
         print("Trying to connect start: " + start.name + " + part: " + part.name);
 
         auto startPos = FindStartPosition(start.macroblock);
@@ -98,12 +156,16 @@ class Generate {
         partEntrancePos.MoveForward();
         print("part entrance pos: " + partEntrancePos.ToString());
         print("part rel start pos: " + part.entrance.ToString());
-        auto partPlacementDirection = CGameEditorPluginMap::ECardinalDirections((partEntrancePos.direction - part.entrance.direction + 4) % 4);
-        print(tostring(partPlacementDirection));
+        auto macroblockSize = part.macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
+        print("part mb size: " + macroblockSize.x + ", " + macroblockSize.y + ", " + macroblockSize.z);
 
-        // we need different behaviour depending on the value of partPlacementDirection
-        auto northArrow = DirectedPosition::Subtract(partEntrancePos, part.entrance);
-        print("northArrow: " + northArrow.ToString());
+        auto northArrow = GetNorthArrowFromRelativePosition(partEntrancePos, part.entrance);
+        if(northArrow !is null)
+            print("northArrow: " + northArrow.ToString());
+
+        auto partPos = NorthArrowToCursor(part.macroblock, northArrow);
+        print("partPos: " + partPos.ToString());
+        editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, partPos.position, partPos.direction);
     }
 
     DirectedPosition@ ToAbsolutePosition(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ mbPosition, DirectedPosition@ relativePosition) {
