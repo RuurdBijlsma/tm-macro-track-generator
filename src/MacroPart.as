@@ -91,6 +91,7 @@ MacroPart@ FromMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
     if(versionParts.Length < 1)
         return null;
     auto result = MacroPart();
+    @result.macroblock = macroblock;
     auto version = versionParts[0];
 
     if(version == "1") {
@@ -119,7 +120,6 @@ MacroPart@ FromMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
         result.respawnable = details[12] == 'true';
         result.type = EPartType(Text::ParseInt(details[13]));
         result.difficulty = EDifficulty(Text::ParseInt(details[14]));
-        @result.macroblock = macroblock;
     } else {
         warn("MacroPart version not supported.");
         // MacroPart@ a = null;
