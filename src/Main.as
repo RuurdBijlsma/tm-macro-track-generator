@@ -10,10 +10,8 @@ CGameCtnEditorCommon@ editor = null;
 CGameCtnApp@ app = null;
 
 void Main() {
-    print(MTG::GetBlocksFolder());
     @app = GetApp();
     @editor = cast<CGameCtnEditorCommon>(app.Editor);
-    print("Main editor is null? " + (editor is null));
     Generate::Initialize();
     Generate::GenerateTrack();
 }

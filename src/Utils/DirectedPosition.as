@@ -115,9 +115,9 @@ DirectedPosition@ Subtract(DirectedPosition@ pos1, DirectedPosition@ pos2) {
 }
 DirectedPosition@ MultiplyScalar(DirectedPosition@ pos, float scalar) {
     return DirectedPosition(
-        pos.x * scalar,
-        pos.y * scalar,
-        pos.z * scalar,
+        int(pos.x * scalar),
+        int(pos.y * scalar),
+        int(pos.z * scalar),
         pos.direction
     );
 }

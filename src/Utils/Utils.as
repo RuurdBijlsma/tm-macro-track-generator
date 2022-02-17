@@ -44,7 +44,7 @@ void ShuffleParts(MacroPart@[]@ parts){
     // While there remain elements to shuffle…
     while (m > 0) {
         // Pick a remaining element…
-        int i = Math::Rand(0, m--);
+        int i = Random::Int(0, m--);
         // And swap it with the current element.
         auto t = parts[m];
         @parts[m] = parts[i];

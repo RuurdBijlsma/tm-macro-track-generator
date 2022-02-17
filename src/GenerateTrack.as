@@ -76,33 +76,10 @@ void GenerateTrack() {
     }
 
     // clear map for testing
-    MTG::CutMap();
+    editor.PluginMapType.RemoveAllBlocks();
 
-    auto starts = FilterParts(EPartType::Start);
-    auto parts = FilterParts(EPartType::Part);
-    auto start = starts[0];
-    auto part = parts[3];
-    print("Trying to connect start: " + start.name + " + part: " + part.name);
-
-    auto startPos = FindStartPosition(start.macroblock);
-    editor.PluginMapType.PlaceMacroblock_AirMode(start.macroblock, startPos.position, startPos.direction);
-    auto startExitPos = MTG::ToAbsolutePosition(start.macroblock, startPos, start.exit);
-
-    auto partEntrancePos = DirectedPosition(startExitPos.x, startExitPos.y, startExitPos.z, startExitPos.direction);
-    // shift 1 forward to get entrance position of next part
-    partEntrancePos.MoveForward();
-    print("part entrance pos: " + partEntrancePos.ToString());
-    print("part rel start pos: " + part.entrance.ToString());
-    auto macroblockSize = part.macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
-    print("part mb size: " + macroblockSize.x + ", " + macroblockSize.y + ", " + macroblockSize.z);
-
-    auto northArrow = MTG::GetNorthArrowFromRelativePosition(partEntrancePos, part.entrance);
-    if(northArrow !is null)
-        print("northArrow: " + northArrow.ToString());
-
-    auto partPos = MTG::NorthArrowToCursor(part.macroblock, northArrow);
-    print("partPos: " + partPos.ToString());
-    editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, partPos.position, partPos.direction);
+    // Random::SetSeed("OPENPLANET");
+    PlacePart();
 }
 
 MacroPart@[]@ FilterParts(const EPartType &in type) {
@@ -112,66 +89,57 @@ MacroPart@[]@ FilterParts(const EPartType &in type) {
             filtered.InsertLast(allParts[i]);
         }
     }
-    // ShuffleParts(filtered);
+    ShuffleParts(filtered);
     return filtered;
 }
 
+bool PlacePart(DirectedPosition@ connectPoint = null, int mbPlaced = 0) {
+    EPartType type;
+    if(connectPoint is null) {
+        type = EPartType::Start;
+    } else {
+        type = mbPlaced > 3 ? EPartType::Finish: EPartType::Part;
+    }
+    MacroPart@[]@ possibleParts = FilterParts(type);
+    bool finished = false;
 
-
-
-
-
-
-
-
-
-
-
-
-
-// bool PlacePart(DirectedPosition@ connectPoint = null) {
-//     EPartType type;
-//     if(connectPoint is null) {
-//         type = EPartType::Start;
-//     } else {
-//         type = EPartType::Part;
-//     }
-//     MacroPart@[]@ possibleParts = FilterParts(type);
-//     bool finished = false;
-
-//     for(uint i = 0; i < possibleParts.Length; i++) {
-//         auto part = possibleParts[i];
-//         if(type == EPartType::Start) {
-//             @connectPoint = FindStartPosition(part.macroblock);
-//             if(connectPoint is null) 
-//                 continue;
-//         }
-//         auto placePoint = ToRelativePosition(connectPoint, part.entrance);
-//         auto canPlace = editor.PluginMapType.CanPlaceMacroblock(part.macroblock, connectPoint.position, connectPoint.direction);
-//         if(!canPlace) 
-//             continue;
-//         auto placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, connectPoint.position, connectPoint.direction);
-//         if(!placed)
-//             continue;
-//         auto newConnectPoint = ToRelativePosition(connectPoint, part.entrance);
-//         if(newConnectPoint.direction == CGameEditorPluginMap::ECardinalDirections::North)
-//             newConnectPoint.z += 1;
-//         else if(newConnectPoint.direction == CGameEditorPluginMap::ECardinalDirections::East)
-//             newConnectPoint.x -= 1;
-//         else if(newConnectPoint.direction == CGameEditorPluginMap::ECardinalDirections::South)
-//             newConnectPoint.z -= 1;
-//         else if(newConnectPoint.direction == CGameEditorPluginMap::ECardinalDirections::West)
-//             newConnectPoint.x += 1;
-//         finished = PlacePart(newConnectPoint);
-//         if(finished) {
-//             break;
-//         } else {
-//             // editor.PluginMapType.Undo();
-//             return false;
-//         }
-//     }
+    for(uint i = 0; i < possibleParts.Length; i++) {
+        auto part = possibleParts[i];
+        DirectedPosition@ placePos = null;
+        if(type == EPartType::Start) {
+            @placePos = FindStartPosition(part.macroblock);
+            if(placePos is null) 
+                continue;
+        } else {
+            print("connectPoint: " + connectPoint.ToPrintString());
+            auto northArrow = MTG::GetNorthArrowFromRelativePosition(connectPoint, part.entrance);
+            print("northArrow: " + northArrow.ToPrintString());
+            @placePos = MTG::NorthArrowToCursor(part.macroblock, northArrow);
+            print("placePos: " + placePos.ToPrintString());
+        }
+        auto canPlace = editor.PluginMapType.CanPlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
+        print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". mbPlaced = " + mbPlaced);
+        if(!canPlace) 
+            continue;
+        auto placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
+        if(!placed)
+            continue;
+        if(type == EPartType::Finish) {
+            return true;
+        }
+        auto partEntrancePos = MTG::ToAbsolutePosition(part.macroblock, placePos, part.exit);
+        partEntrancePos.MoveForward();
+        finished = PlacePart(partEntrancePos, mbPlaced + 1);
+        if(finished) {
+            print("Finished!");
+            break;
+        } else {
+            print("Removing!");
+            editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
+        }
+    }
     
-//     return finished;
-// }
+    return finished;
+}
 
 }
