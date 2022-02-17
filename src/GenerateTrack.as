@@ -22,6 +22,7 @@ MacroPart@[] GetMacroParts() {
                 for(uint k = 0; k < mbFolder.ChildNodes.Length; k++) {
                     auto articleNode = cast<CGameCtnArticleNodeArticle@>(mbFolder.ChildNodes[k]);
                     if(articleNode is null) continue;
+                    print(articleNode.Article.IdName);
                     auto macroblock = cast<CGameCtnMacroBlockInfo@>(articleNode.Article.LoadedNod);
                     if(macroblock is null) continue;
                     auto macroPart = MacroPart::FromMacroblock(macroblock);
@@ -79,7 +80,9 @@ void GenerateTrack() {
     editor.PluginMapType.RemoveAllBlocks();
 
     // Random::SetSeed("OPENPLANET");
-    PlacePart();
+    // PlacePart();
+
+    auto starts = FilterParts(EPartType::Start);
 }
 
 MacroPart@[]@ FilterParts(const EPartType &in type) {
@@ -98,7 +101,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int mbPlaced = 0) {
     if(connectPoint is null) {
         type = EPartType::Start;
     } else {
-        type = mbPlaced > 3 ? EPartType::Finish: EPartType::Part;
+        type = mbPlaced > 2 ? EPartType::Finish: EPartType::Part;
     }
     MacroPart@[]@ possibleParts = FilterParts(type);
     bool finished = false;

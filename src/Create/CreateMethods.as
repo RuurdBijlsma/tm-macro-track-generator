@@ -241,10 +241,24 @@ void SelectNewMacroblock() {
     }
 }
 
-void SaveMacroPart(MacroPart@ partDetails) {
+void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
+    if(macroblock is null) return;
+    string oldRelPath = macroblock.IdName;
+    print("oldPath: " + oldRelPath);
+    macroblock.IdName = "Stadium\\" + macroPartFolder + "\\" + newName + ".Macroblock.Gbx";
+    print("newPath: " + macroblock.IdName);
+    editor.PluginMapType.SaveMacroblock(macroblock);
+    auto oldPath = MTG::GetBlocksFolder() + oldRelPath;
+    if(IO::FileExists(oldPath)) {
+        print("Deleting " + oldPath);
+        IO::Delete(oldPath);
+    }
+}
+
+void SaveMacroPart(MacroPart@ part) {
     string base64Items = "";
-    for(uint i = 0; i < partDetails.embeddedItems.Length; i++) {
-        auto relItemPath = partDetails.embeddedItems[i];
+    for(uint i = 0; i < part.embeddedItems.Length; i++) {
+        auto relItemPath = part.embeddedItems[i];
         auto itemPath = MTG::GetItemsFolder() + relItemPath;
         print("itemPath: " + itemPath);
         IO::File file(itemPath);
@@ -255,8 +269,9 @@ void SaveMacroPart(MacroPart@ partDetails) {
         if(i != 0) base64Items += MacroPart::DetailSeparator;
         base64Items += buffer.ReadToBase64(buffer.GetSize());
     }
-    partDetails.macroblock.Description = partDetails.ToString() + MacroPart::BaseSeparator + base64Items;
-    editor.PluginMapType.SaveMacroblock(partDetails.macroblock);
+    part.macroblock.Description = part.ToString() + MacroPart::BaseSeparator + base64Items;
+    editor.PluginMapType.SaveMacroblock(part.macroblock);
+    RenameMacroblock(part.macroblock, "MTG-" + part.author + "-" + part.name);
 }
 
 }

@@ -1,10 +1,30 @@
 //todo
-// -------------- first: ----------------
-// * big ol refactor with safety checks and dont load editor everywhere
-// -------------- after: ---------------
-// * track generation
+// -------------- priority high: ----------------
+// * Filters
+//      - connector speed
+//      - checkbox for whether to check for connector speed
+//      - max variation of connector speed
+//      - custom items allowed
+//      - custom blocks allowed
+//      - tag
+//      - min-max speed
+//      - difficulty range
+//      - desired map length
+//      - author
+//      - respawnable
+//      - allow same macropart being used twice checkbox
+// -------------- priority low: ---------------
+// * stop yields in generate track om de timeout te omzeilen
+// * random macroblock kleuren
 // * Nicer UI for creating macropart (integrated in real editor UI)
 // * UI for creating tracks
+// * safety checks for editor is null
+// * Give warning when creating that non-block mode placed items can end up intersecting 
+//      so dont make large section with just ghost/free blocks or items, 
+//      if you do then place some blockmode blocks in the area to stop collisions when generating track
+// * rename mb files after filling in details (rename to MTG-RuteNL-{name}.Macroblock.Gbx)
+// * When you cancel creating a macropart, delete the macroblock
+// * make function to delete macroblock properly
 
 CGameCtnEditorCommon@ editor = null;
 CGameCtnApp@ app = null;
@@ -14,9 +34,13 @@ void Main() {
     @editor = cast<CGameCtnEditorCommon>(app.Editor);
     Generate::Initialize();
     Generate::GenerateTrack();
+    sleep(5000);
+    print("Deleting");
+    editor.DeleteArticle_OnRemoveInstancesAndModel();
+    editor.DeleteArticle_OnYes();
 }
 
-void Update(float dt) { 
+void Update(float dt) {
     @app = GetApp();
     @editor = cast<CGameCtnEditorCommon>(app.Editor);
 }

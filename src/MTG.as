@@ -4,9 +4,9 @@ string GetTrackmaniaFolder() {
     return IO::FromUserGameFolder("");
 }
 
-string GetItemsFolder() { return IO::FromUserGameFolder("Items/"); }
+string GetItemsFolder() { return IO::FromUserGameFolder("Items\\"); }
 
-string GetBlocksFolder() { return IO::FromUserGameFolder("Blocks/"); }
+string GetBlocksFolder() { return IO::FromUserGameFolder("Blocks\\"); }
 
 bool CutMap() {
     editor.PluginMapType.CopyPaste_SelectAll();
