@@ -6,6 +6,7 @@ class PartFilter {
     // - custom blocks allowed
     bool allowCustomBlocks = true;
     // - tag
+    string[]@ includeTags = {};
     string[]@ excludeTags = {};
     // - checkbox for whether to check for connector speed
     bool considerSpeed = true;
