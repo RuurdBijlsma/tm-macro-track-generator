@@ -1,4 +1,11 @@
+enum EReuse {
+    Reuse,
+    PreferNoReuse,
+    NoReuse
+};
+
 class PartFilter {
+    bool animate = true;
     bool airMode = true;
 
     // - custom items allowed
@@ -18,13 +25,13 @@ class PartFilter {
     // - difficulty range
     EDifficulty[]@ difficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
     // - desired map length (seconds)
-    int desiredMapLength = 60;
+    int desiredMapLength = 1800;
     // - author (empty for all authors)
     string author = "";
     // - respawnable
     bool respawnable = false;
     // - allow same macropart being used twice checkbox
-    bool allowPartReuse = true;
+    EReuse reuse = EReuse::PreferNoReuse;
 
     PartFilter() {
         ResetIncludeTags();

@@ -159,6 +159,7 @@ void GenerateTrack() {
     // clear map for testing
     editor.PluginMapType.RemoveAllBlocks();
 
+    lastYield = Time::Now;
     // Random::SetSeed("OPENPLANET");
     auto success = PlacePart();
     if(!success) {
@@ -174,15 +175,39 @@ MacroPart@[]@ FilterParts(int speed, const EPartType &in type, MacroPart@[]@ use
             continue;
         if(filter.considerSpeed && Math::Abs(part.enterSpeed - speed) > filter.maxSpeedVariation)
             continue;
-        if(!filter.allowPartReuse && usedParts.FindByRef(part) != -1)
+        if(filter.reuse == EReuse::NoReuse && usedParts.FindByRef(part) != -1)
             continue;
         filtered.InsertLast(part);
     }
     ShuffleParts(filtered);
+    if(filter.reuse == EReuse::PreferNoReuse) {
+        MacroPart@[]@ usedList = {};
+        MacroPart@[]@ unusedList = {};
+        for(uint i = 0; i < filtered.Length; i++) {
+            auto part = filtered[i];
+            if(usedParts.FindByRef(part) != -1){
+                usedList.InsertLast(part);
+            } else {
+                unusedList.InsertLast(part);
+            }
+        }
+        @filtered = {};
+        for(uint i = 0; i < unusedList.Length; i++)
+            filtered.InsertLast(unusedList[i]);
+        for(uint i = 0; i < usedList.Length; i++)
+            filtered.InsertLast(usedList[i]);
+    }
     return filtered;
 }
 
+int lastYield = 0;
 bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int duration = 0, MacroPart@[] usedParts = {}) {
+    auto now = Time::Now;
+    // prevent crash due to timeout
+    if(filter.animate || now - lastYield > 900){
+        lastYield = now;
+        yield();
+    }
     EPartType type;
     if(connectPoint is null) {
         type = EPartType::Start;
@@ -227,6 +252,8 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
             break;
         } else {
             print("Removing!");
+            if(filter.animate)
+                yield();
             usedParts.RemoveLast();
             editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
             // return false;

@@ -10,6 +10,7 @@
 //      so dont make large section with just ghost/free blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
+// * use dictionary for macroblock count used in map and sort by that when doing EReuse::PreferNoReuse
 // --------------- not possible: ------------------
 // * find better way of deleting macroblock
 
