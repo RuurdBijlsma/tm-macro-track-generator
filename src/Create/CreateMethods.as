@@ -26,6 +26,8 @@ EPartType exitType = EPartType::Part;
 
 
 bool OnKeyPress(bool down, VirtualKey key) {
+    if(editor is null) return false;
+
     if(state == EState::SelectPlacement && key == VirtualKey::V && down) {
         return PlaceUserMacroblockAtCursor();
     }
@@ -33,7 +35,20 @@ bool OnKeyPress(bool down, VirtualKey key) {
     return false;
 }
 
+void PlaceBackMap() {
+    if(copiedMap) {
+        // get back original map & remove placed macroblock
+        editor.PluginMapType.Undo();
+    } else {
+        // remove placed macroblock
+        editor.PluginMapType.Undo();
+        editor.PluginMapType.Redo();
+    }
+}
+
 bool OnMouseButton(bool down, int button, int x, int y) {
+    if(editor is null) return false;
+
     auto isFreeLook = editor.PluginMapType.EditMode == CGameEditorPluginMap::EditMode::FreeLook;
     if(!isEditing && state == EState::SelectPlacement && button == 0 && down && !isFreeLook) {
         return PlaceUserMacroblockAtCursor();
@@ -71,14 +86,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
             if(blockPath.EndsWith(".Block.Gbx") && partDetails.embeddedItems.Find(blockPath) == -1)
                 partDetails.embeddedItems.InsertLast(blockPath);
         }
-        if(copiedMap) {
-            // get back original map & remove placed macroblock
-            editor.PluginMapType.Undo();
-        } else {
-            // remove placed macroblock
-            editor.PluginMapType.Undo();
-            editor.PluginMapType.Redo();
-        }
+        PlaceBackMap();
 
         // clear any accidentally selected coords
         editor.PluginMapType.CustomSelectionCoords.RemoveRange(0, editor.PluginMapType.CustomSelectionCoords.Length);
@@ -165,7 +173,7 @@ string[]@ GetTags(CGameCtnBlockInfo@ blockInfo) {
         result.InsertLast("Dirt");
     if(rootPage == 'RoadBump') {
         result.InsertLast("Tech");
-        result.InsertLast("Road Bump");
+        result.InsertLast("Sausage");
     }
     if(rootPage == 'RoadIce') {
         result.InsertLast("Bobsleigh");
@@ -193,6 +201,10 @@ bool PlaceUserMacroblockAtCursor() {
         if(editor.CurrentMacroBlockInfo is null) 
             return false;
         @partDetails = MacroPart::FromMacroblock(editor.CurrentMacroBlockInfo);
+        if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
+            partDetails.author = editor.Challenge.AuthorNickName;
+            print("author name: " + partDetails.author);
+        }
         if(partDetails is null) {
             warn("MacroPart selected for editing is invalid.");
             @partDetails = MacroPart();
@@ -210,6 +222,7 @@ bool PlaceUserMacroblockAtCursor() {
 void PlaceUserMacroblock(DirectedPosition@ dirPos) {
     copiedMap = MTG::CutMap();
     if(dirPos is null) {
+        PlaceBackMap();
         state = EState::Failed;
         failureReason = "Failed to find placement position for macro.";
         warn("Failed to place macro!");
@@ -221,7 +234,15 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
 }
 
 void SelectNewMacroblock() {
-    auto maxWait = 1000;
+    auto maxWait = 500;
+    mbPath = macroPartFolder + "\\temp_MTG";
+    app.BasicDialogs.String = mbPath;
+    yield();
+    app.BasicDialogs.DialogSaveAs_OnValidate();
+    yield();
+    app.BasicDialogs.DialogSaveAs_OnValidate();
+    yield();
+    yield();
     while(true) {
         auto mbPathW = wstring("Stadium\\" + mbPath.Replace('/', '\\')) + ".Macroblock.Gbx";
         print(mbPathW);
@@ -230,6 +251,7 @@ void SelectNewMacroblock() {
         if(maxWait-- < 0) {
             failureReason = "Failed to get newly saved macroblock";
             state = EState::Failed;
+            PlaceBackMap();
             break;
         }
         if(mb !is null) {
@@ -247,6 +269,10 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
     print("oldPath: " + oldRelPath);
     macroblock.IdName = "Stadium\\" + macroPartFolder + "\\" + newName + ".Macroblock.Gbx";
     print("newPath: " + macroblock.IdName);
+    if(oldRelPath == macroblock.IdName) {
+        print("No need to rename, file is already named correctly");
+        return;
+    }
     editor.PluginMapType.SaveMacroblock(macroblock);
     auto oldPath = MTG::GetBlocksFolder() + oldRelPath;
     if(IO::FileExists(oldPath)) {

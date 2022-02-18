@@ -20,7 +20,7 @@ enum EDifficulty {
     Expert
 };
 
-string[]@ availableTags = {"FullSpeed", "Tech", "Mixed", "Nascar", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Road Bump", "RPG", "Race"};
+string[]@ availableTags = {"FullSpeed", "Tech", "Mixed", "Nascar", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Sausage", "RPG", "Race"};
 EConnector[]@ availableConnectors = {EConnector::Platform, EConnector::RoadDirt, EConnector::RoadIce, EConnector::RoadBump, EConnector::DecoWall};
 EPartType[]@ availableTypes = {EPartType::Start, EPartType::Finish, EPartType::Part, EPartType::Multilap};
 EDifficulty[]@ availableDifficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
@@ -39,13 +39,29 @@ class MacroPart {
 
     int enterSpeed = 100;
     int exitSpeed = 200;
-    int duration = 5;
+    int duration = 10;
     bool respawnable = false;
     EPartType type = EPartType::Part;
-    EDifficulty difficulty = EDifficulty::Intermediate;
+    EDifficulty difficulty = EDifficulty::Beginner;
 
     MacroPart() {
         author = GetLocalLogin();
+    }
+
+    bool get_HasCustomItems() {
+        for(uint i = 0; i < embeddedItems.Length; i++) {
+            if(embeddedItems[i].EndsWith(".Item.Gbx"))
+                return true;
+        }
+        return false;
+    }
+
+    bool get_HasCustomBlocks() {
+        for(uint i = 0; i < embeddedItems.Length; i++) {
+            if(embeddedItems[i].EndsWith(".Block.Gbx"))
+                return true;
+        }
+        return false;
     }
 
     void AddTags(string[]@ newTags) {

@@ -41,6 +41,7 @@ void RenderInterface() {
     }
 
     if(state != EState::Idle && state != EState::SavedConfirmation && UI::OrangeButton("Cancel creating MacroPart")) {
+        PlaceBackMap();
         windowColor = baseWindowColor;
         state = EState::Idle;
     }
@@ -60,7 +61,7 @@ void RenderFailedState() {
 
 void RenderIdleState() {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
-    UI::Text("Randomly generated tracks consist of 'MacroParts'. These are macroblocks with some extra information embedded in them to help the generator connect parts together.");
+    UI::Text("Randomly generated tracks consist of 'MacroParts'. These are macroblocks with extra embedded information to help the generator connect parts together.");
     UI::TextDisabled("Your available MacroParts can be found in the macroblocks tab below (F4), in the folder '" + macroPartFolder + "'.");
     UI::PopTextWrapPos();            
     if(UI::Button("Create new MacroPart")) {
@@ -95,12 +96,6 @@ void RenderSelectBlockState() {
     auto currentFrame = app.BasicDialogs.Dialogs.CurrentFrame;
     if(currentFrame !is null && currentFrame.IdName == 'FrameDialogSaveAs') {
         if(!changedSaveAsFilename) {
-            auto timeString = Time::FormatString("%Y%m%d-%H%M%S", Time::get_Stamp());
-            auto filename = "MTG-" + partDetails.author + "-" + timeString;
-            mbPath = macroPartFolder + "/" + filename;
-            app.BasicDialogs.String = mbPath;
-            app.BasicDialogs.DialogSaveAs_OnValidate();
-            app.BasicDialogs.DialogSaveAs_OnValidate();
             changedSaveAsFilename = true;
             startnew(SelectNewMacroblock);
         }

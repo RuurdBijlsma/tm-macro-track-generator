@@ -24,7 +24,8 @@
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 // * rename mb files after filling in details (rename to MTG-RuteNL-{name}.Macroblock.Gbx)
 // * When you cancel creating a macropart, delete the macroblock
-// * make function to delete macroblock properly
+// * make function to delete macroblock properly (try with SelectArticle(article@ nodearticle)) -> then delete
+// * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
 
 CGameCtnEditorCommon@ editor = null;
 CGameCtnApp@ app = null;
@@ -34,10 +35,6 @@ void Main() {
     @editor = cast<CGameCtnEditorCommon>(app.Editor);
     Generate::Initialize();
     Generate::GenerateTrack();
-    sleep(5000);
-    print("Deleting");
-    editor.DeleteArticle_OnRemoveInstancesAndModel();
-    editor.DeleteArticle_OnYes();
 }
 
 void Update(float dt) {
@@ -49,5 +46,6 @@ bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key)
 bool OnMouseButton(bool down, int button, int x, int y){ return Create::OnMouseButton(down, button, x, y); }
 
 void RenderInterface() {
-    Create::RenderInterface();
+    if(editor !is null)
+        Create::RenderInterface();
 }
