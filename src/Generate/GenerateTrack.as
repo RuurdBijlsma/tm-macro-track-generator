@@ -2,11 +2,10 @@ namespace Generate {
 
 MacroPart@[]@ allParts = {};
 MacroPart@[]@ filteredParts = {};
-PartFilter@ filter = null;
 
 void Initialize() {
+    GenOptions::Initialize();
     @allParts = GetMacroParts();
-    @filter = PartFilter();
 }
 
 // Get MacroParts from macro folder
@@ -74,38 +73,38 @@ DirectedPosition@ FindStartPosition(CGameCtnMacroBlockInfo@ macroblock) {
     return null;
 }
 
-MacroPart@[]@ GlobalFilterParts(PartFilter filter) {
+MacroPart@[]@ GlobalFilterParts() {
     bool hasStart = false;
     bool hasFinish = false;
     MacroPart@[]@ filtered = {};
     for(uint i = 0; i < allParts.Length; i++) {
         auto part = allParts[i];
         if(part.type != EPartType::Start) {
-            if(part.enterSpeed > filter.maxSpeed || part.enterSpeed < filter.minSpeed) {
+            if(part.enterSpeed > GenOptions::maxSpeed || part.enterSpeed < GenOptions::minSpeed) {
                 warn("Removing part " + part.name + " by filter: speed entrance");
                 continue;
             }
         }
         if(part.type != EPartType::Finish) 
-            if(part.exitSpeed > filter.maxSpeed || part.exitSpeed < filter.minSpeed) {
+            if(part.exitSpeed > GenOptions::maxSpeed || part.exitSpeed < GenOptions::minSpeed) {
                 warn("Removing part " + part.name + " by filter: speed exit");
                 continue;
             }
-        if(!filter.allowCustomItems && part.HasCustomItems){
+        if(!GenOptions::allowCustomItems && part.HasCustomItems){
             warn("Removing part " + part.name + " by filter: HasCustomItems");
             continue;
         }
-        if(!filter.allowCustomBlocks && part.HasCustomBlocks){
+        if(!GenOptions::allowCustomBlocks && part.HasCustomBlocks){
             warn("Removing part " + part.name + " by filter: HasCustomBlocks");
             continue;
         }
         bool partHasIncludeTag = false;
         bool partHasExcludeTag = false;
         for(uint j = 0; j < part.tags.Length; j++) {
-            if(filter.includeTags.Find(part.tags[j]) != -1) {
+            if(GenOptions::includeTags.Find(part.tags[j]) != -1) {
                 partHasIncludeTag = true;
             }
-            if(filter.excludeTags.Find(part.tags[j]) != -1) {
+            if(GenOptions::excludeTags.Find(part.tags[j]) != -1) {
                 partHasExcludeTag = true;
                 break;
             }
@@ -118,15 +117,15 @@ MacroPart@[]@ GlobalFilterParts(PartFilter filter) {
             warn("Removing part " + part.name + " by filter: partHasIncludeTag");
             continue;
         }
-        if(filter.difficulties.Find(part.difficulty) == -1){
+        if(GenOptions::difficulties.Find(part.difficulty) == -1){
             warn("Removing part " + part.name + " by filter: difficulties");
             continue;
         }
-        if(filter.author != "" && filter.author != part.author){
+        if(GenOptions::author != "" && GenOptions::author != part.author){
             warn("Removing part " + part.name + " by filter: author");
             continue;
         }
-        if(filter.respawnable && !part.respawnable){
+        if(GenOptions::respawnable && !part.respawnable){
             warn("Removing part " + part.name + " by filter: respawnable");
             continue;
         }
@@ -143,16 +142,21 @@ MacroPart@[]@ GlobalFilterParts(PartFilter filter) {
     return filtered;
 }
 
+void UpdateFilteredParts() {
+    @filteredParts = GlobalFilterParts();
+    if(filteredParts.Length == 0) {
+        warn("Because of the set filters, there are no MacroParts to generate a track with!");
+    }
+}
+
 void GenerateTrack() {
+    Random::seedEnabled = GenOptions::useSeed;
+    Random::seedText = GenOptions::seed;
     if(allParts.Length == 0) {
         warn("No MacroParts found to generate a track with!");
         return;
     }
-    @filteredParts = GlobalFilterParts(filter);
-    if(filteredParts.Length == 0) {
-        warn("Because of the set filters, there are no MacroParts to generate a track with!");
-        return;
-    }
+    UpdateFilteredParts();
 
     print("Found " + filteredParts.Length + " available parts after global filter is applied.");
 
@@ -160,7 +164,6 @@ void GenerateTrack() {
     editor.PluginMapType.RemoveAllBlocks();
 
     lastYield = Time::Now;
-    // Random::SetSeed("OPENPLANET");
     auto success = PlacePart();
     if(!success) {
         warn("Failed to create route :(");
@@ -173,14 +176,14 @@ MacroPart@[]@ FilterParts(int speed, const EPartType &in type, MacroPart@[]@ use
         auto part = filteredParts[i];
         if(part.type != type)
             continue;
-        if(filter.considerSpeed && Math::Abs(part.enterSpeed - speed) > filter.maxSpeedVariation)
+        if(GenOptions::considerSpeed && Math::Abs(part.enterSpeed - speed) > GenOptions::maxSpeedVariation)
             continue;
-        if(filter.reuse == EReuse::NoReuse && usedParts.FindByRef(part) != -1)
+        if(GenOptions::reuse == EReuse::NoReuse && usedParts.FindByRef(part) != -1)
             continue;
         filtered.InsertLast(part);
     }
     ShuffleParts(filtered);
-    if(filter.reuse == EReuse::PreferNoReuse) {
+    if(GenOptions::reuse == EReuse::PreferNoReuse) {
         MacroPart@[]@ usedList = {};
         MacroPart@[]@ unusedList = {};
         for(uint i = 0; i < filtered.Length; i++) {
@@ -204,7 +207,7 @@ int lastYield = 0;
 bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int duration = 0, MacroPart@[] usedParts = {}) {
     auto now = Time::Now;
     // prevent crash due to timeout
-    if(filter.animate || now - lastYield > 900){
+    if(GenOptions::animate || now - lastYield > 900){
         lastYield = now;
         yield();
     }
@@ -212,7 +215,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
     if(connectPoint is null) {
         type = EPartType::Start;
     } else {
-        type = duration + 7 > filter.desiredMapLength ? EPartType::Finish: EPartType::Part;
+        type = duration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
     }
     MacroPart@[]@ possibleParts = FilterParts(incomingSpeed, type, usedParts);
     bool finished = false;
@@ -233,7 +236,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
         if(!canPlace) 
             continue;
         bool placed;
-        if(filter.airMode) {
+        if(GenOptions::airMode) {
             placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
         } else {
             placed = editor.PluginMapType.PlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
@@ -252,7 +255,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
             break;
         } else {
             print("Removing!");
-            if(filter.animate)
+            if(GenOptions::animate)
                 yield();
             usedParts.RemoveLast();
             editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);

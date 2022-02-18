@@ -21,7 +21,6 @@ void Main() {
     @app = GetApp();
     @editor = cast<CGameCtnEditorCommon>(app.Editor);
     Generate::Initialize();
-    Generate::GenerateTrack();
 }
 
 void Update(float dt) {
@@ -33,6 +32,8 @@ bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key)
 bool OnMouseButton(bool down, int button, int x, int y){ return Create::OnMouseButton(down, button, x, y); }
 
 void RenderInterface() {
-    if(editor !is null)
+    if(editor !is null) {
         Create::RenderInterface();
+        Generate::RenderInterface();
+    }
 }
