@@ -203,11 +203,16 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
             auto northArrow = MTG::GetNorthArrowFromRelativePosition(connectPoint, part.entrance);
             @placePos = MTG::NorthArrowToCursor(part.macroblock, northArrow);
         }
-        auto canPlace = editor.PluginMapType.CanPlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
+        bool canPlace = editor.PluginMapType.CanPlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
         print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + duration);
         if(!canPlace) 
             continue;
-        auto placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
+        bool placed;
+        if(filter.airMode) {
+            placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
+        } else {
+            placed = editor.PluginMapType.PlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
+        }
         if(!placed)
             continue;
         if(type == EPartType::Finish) {

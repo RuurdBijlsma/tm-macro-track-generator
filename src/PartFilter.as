@@ -1,10 +1,11 @@
 class PartFilter {
+    bool airMode = true;
+
     // - custom items allowed
     bool allowCustomItems = true;
     // - custom blocks allowed
     bool allowCustomBlocks = true;
     // - tag
-    string[]@ includeTags = {};
     string[]@ excludeTags = {};
     // - checkbox for whether to check for connector speed
     bool considerSpeed = true;

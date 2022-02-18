@@ -41,8 +41,7 @@ void RenderInterface() {
     }
 
     if(state != EState::Idle && state != EState::SavedConfirmation && UI::OrangeButton("Cancel creating MacroPart")) {
-        PlaceBackMap();
-        windowColor = baseWindowColor;
+        CleanUp();
         state = EState::Idle;
     }
 

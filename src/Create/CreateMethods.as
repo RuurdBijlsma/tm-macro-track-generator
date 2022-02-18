@@ -35,6 +35,16 @@ bool OnKeyPress(bool down, VirtualKey key) {
     return false;
 }
 
+void CleanUp() {
+    auto tempMacroblock = MTG::GetBlocksFolder() + macroPartFolder + "\\temp_MTG.Macroblock.Gbx";
+    if(IO::FileExists(tempMacroblock)) {
+        print("Clean up " + tempMacroblock);
+        IO::Delete(tempMacroblock);
+    }
+    PlaceBackMap();
+    windowColor = baseWindowColor;
+}
+
 void PlaceBackMap() {
     if(copiedMap) {
         // get back original map & remove placed macroblock
@@ -222,7 +232,7 @@ bool PlaceUserMacroblockAtCursor() {
 void PlaceUserMacroblock(DirectedPosition@ dirPos) {
     copiedMap = MTG::CutMap();
     if(dirPos is null) {
-        PlaceBackMap();
+        CleanUp();
         state = EState::Failed;
         failureReason = "Failed to find placement position for macro.";
         warn("Failed to place macro!");
@@ -251,7 +261,7 @@ void SelectNewMacroblock() {
         if(maxWait-- < 0) {
             failureReason = "Failed to get newly saved macroblock";
             state = EState::Failed;
-            PlaceBackMap();
+            CleanUp();
             break;
         }
         if(mb !is null) {
