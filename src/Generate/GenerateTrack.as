@@ -110,7 +110,7 @@ MacroPart@[]@ GlobalFilterParts() {
         bool partHasIncludeTag = false;
         bool partHasExcludeTag = false;
         for(uint j = 0; j < part.tags.Length; j++) {
-            if(GenOptions::includeTags.Find(part.tags[j]) != -1) {
+            if(GenOptions::includeTags.Length == 0 || GenOptions::includeTags.Find(part.tags[j]) != -1) {
                 partHasIncludeTag = true;
             }
             if(GenOptions::excludeTags.Find(part.tags[j]) != -1) {
@@ -162,12 +162,16 @@ void UpdateFilteredParts() {
 
 void GenerateTrack() {
     if(isGenerating) return;
-    Random::seedEnabled = GenOptions::useSeed;
-    Random::seedText = GenOptions::seed;
+
     if(allParts.Length == 0) {
         warn("No MacroParts found to generate a track with!");
         return;
     }
+    
+    Random::seedEnabled = GenOptions::useSeed;
+    if(GenOptions::useSeed)
+        Random::SetSeed(GenOptions::seed);
+
     isGenerating = true;
     UpdateFilteredParts();
 
