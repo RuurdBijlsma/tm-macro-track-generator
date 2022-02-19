@@ -1,3 +1,8 @@
+string GetHourGlass(){
+    int HourGlassValue = Time::Stamp % 3;
+    return (HourGlassValue == 0 ? Icons::HourglassStart : (HourGlassValue == 1 ? Icons::HourglassHalf : Icons::HourglassEnd));
+}
+
 // unused
 vec2 RotatePoint(vec2 pivot, float angle, vec2 point) {
     float s = Math::Sin(angle);

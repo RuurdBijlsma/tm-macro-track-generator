@@ -1,15 +1,19 @@
 namespace Generate {
 
+bool initialized = false;
 MacroPart@[]@ allParts = {};
 MacroPart@[]@ filteredParts = {};
+bool isGenerating = false;
 
 void Initialize() {
     GenOptions::Initialize();
     @allParts = GetMacroParts();
+    UpdateFilteredParts();
 }
 
 // Get MacroParts from macro folder
 MacroPart@[] GetMacroParts() {
+    initialized = true;
     print("Editor is null? " + (editor is null));
     auto pluginMapType = editor.PluginMapType;
     auto inventory = pluginMapType.Inventory;
@@ -73,10 +77,15 @@ DirectedPosition@ FindStartPosition(CGameCtnMacroBlockInfo@ macroblock) {
     return null;
 }
 
+int startCount = 0;
+int partCount = 0;
+int finishCount = 0;
 MacroPart@[]@ GlobalFilterParts() {
-    bool hasStart = false;
-    bool hasFinish = false;
+    startCount = 0;
+    partCount = 0;
+    finishCount = 0;
     MacroPart@[]@ filtered = {};
+
     for(uint i = 0; i < allParts.Length; i++) {
         auto part = allParts[i];
         if(part.type != EPartType::Start) {
@@ -130,14 +139,16 @@ MacroPart@[]@ GlobalFilterParts() {
             continue;
         }
         if(part.type == EPartType::Start)
-            hasStart = true;
+            startCount++;
         if(part.type == EPartType::Finish)
-            hasFinish = true;
+            finishCount++;
+        if(part.type == EPartType::Part)
+            partCount++;
         filtered.InsertLast(part);
     }
-    if(!hasStart) 
+    if(startCount == 0) 
         warn("There are no start parts that fit the given filter.");
-    if(!hasFinish)
+    if(finishCount == 0)
         warn("There are no finish parts that fit the given filter.");
     return filtered;
 }
@@ -150,12 +161,14 @@ void UpdateFilteredParts() {
 }
 
 void GenerateTrack() {
+    if(isGenerating) return;
     Random::seedEnabled = GenOptions::useSeed;
     Random::seedText = GenOptions::seed;
     if(allParts.Length == 0) {
         warn("No MacroParts found to generate a track with!");
         return;
     }
+    isGenerating = true;
     UpdateFilteredParts();
 
     print("Found " + filteredParts.Length + " available parts after global filter is applied.");
@@ -168,6 +181,7 @@ void GenerateTrack() {
     if(!success) {
         warn("Failed to create route :(");
     }
+    isGenerating = false;
 }
 
 MacroPart@[]@ FilterParts(int speed, const EPartType &in type, MacroPart@[]@ usedParts) {

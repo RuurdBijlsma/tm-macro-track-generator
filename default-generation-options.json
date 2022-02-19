@@ -1,0 +1,37 @@
+{
+    "includeTags": [
+        "FullSpeed",
+        "Tech",
+        "Mixed",
+        "Nascar",
+        "Dirt",
+        "Bobsleigh",
+        "Grass",
+        "Ice",
+        "Plastic",
+        "Water",
+        "Sausage",
+        "RPG",
+        "Race"
+    ],
+    "excludeTags": [],
+    "difficulties": [
+        0,
+        1,
+        2,
+        3
+    ],
+    "useSeed": false,
+    "seed": "Hello World",
+    "animate": false,
+    "airMode": true,
+    "allowCustomItems": true,
+    "allowCustomBlocks": true,
+    "considerSpeed": true,
+    "maxSpeedVariation": 100,
+    "minSpeed": 0,
+    "maxSpeed": 1000,
+    "desiredMapLength": 60,
+    "author": "",
+    "reuse": 1
+}

@@ -9,7 +9,7 @@ void RenderInterface() {
     UI::PushStyleVar(UI::StyleVar::WindowRounding, 10.0);
     UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(10, 6));
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
-    UI::SetNextWindowSize(470, 880);
+    UI::SetNextWindowSize(480, 960);
     if(UI::Begin("Generate track", windowOpen)) {
         RenderGenerateTrack();
     }
@@ -25,9 +25,9 @@ void RenderGenerateTrack() {
     if(GenOptions::useSeed) {
         GenOptions::seed = UI::InputText("Seed", GenOptions::seed);
     }
-    GenOptions::animate = UI::Checkbox("Animate generation process", GenOptions::allowCustomItems);
+    GenOptions::animate = UI::Checkbox("Animate generation process", GenOptions::animate);
     UI::TextDisabled("Track generation is more restricted with airmode turned off, because the wood supports can get in the way.");
-    GenOptions::airMode = UI::Checkbox("Use airmode to place blocks", GenOptions::allowCustomItems);
+    GenOptions::airMode = UI::Checkbox("Use airmode to place blocks", GenOptions::airMode);
     // -------- Include tags ------------
     UI::TextDisabled("Parts must include one of the following tags:");
     string iTagsString = "";
@@ -46,16 +46,19 @@ void RenderGenerateTrack() {
                     GenOptions::includeTags.RemoveAt(foundIndex);
                 else
                     GenOptions::includeTags.InsertLast(availableTags[i]);
+                GenOptions::OnChange();
             }
         }
         UI::EndCombo();
     }
     if(UI::Button("Clear")) {
         GenOptions::ClearIncludeTags();
+        GenOptions::OnChange();
     }
     UI::SameLine();
     if(UI::Button("Reset")) {
         GenOptions::ResetIncludeTags();
+        GenOptions::OnChange();
     }
     UI::PopID();
 
@@ -77,12 +80,14 @@ void RenderGenerateTrack() {
                     GenOptions::excludeTags.RemoveAt(foundIndex);
                 else
                     GenOptions::excludeTags.InsertLast(availableTags[i]);
+                GenOptions::OnChange();
             }
         }
         UI::EndCombo();
     }
     if(UI::Button("Clear")) {
         GenOptions::ClearExcludeTags();
+        GenOptions::OnChange();
     }
     UI::PopID();
 
@@ -101,6 +106,7 @@ void RenderGenerateTrack() {
                     GenOptions::difficulties.RemoveAt(foundIndex);
                 else
                     GenOptions::difficulties.InsertLast(availableDifficulties[i]);
+                GenOptions::OnChange();
             }
         }
         UI::EndCombo();
@@ -111,11 +117,11 @@ void RenderGenerateTrack() {
     GenOptions::respawnable = UI::Checkbox("Parts must be respawnable", GenOptions::respawnable);
     GenOptions::considerSpeed = UI::Checkbox("Consider speed when connecting parts", GenOptions::considerSpeed);
     if(GenOptions::considerSpeed) {
-        UI::TextDisabled("Maximum difference in speed between parts.");
+        UI::TextDisabled("Maximum difference in speed between parts:");
         GenOptions::maxSpeedVariation = Math::Clamp(UI::InputInt("Max speed difference", GenOptions::maxSpeedVariation, 10), 0, 990);
     }
-    GenOptions::maxSpeed = Math::Clamp(UI::InputInt("Maximum speed", GenOptions::maxSpeed, 10), 0, 999);
-    GenOptions::minSpeed = Math::Clamp(UI::InputInt("Minimum speed", GenOptions::minSpeed, 10), 0, 999);
+    GenOptions::maxSpeed = Math::Clamp(UI::InputInt("Maximum speed", GenOptions::maxSpeed, 10), GenOptions::minSpeed + 10, 1000);
+    GenOptions::minSpeed = Math::Clamp(UI::InputInt("Minimum speed", GenOptions::minSpeed, 10), 0, GenOptions::maxSpeed - 10);
     GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
 
     UI::TextDisabled("Leave author empty to allow any author.");
@@ -128,8 +134,20 @@ void RenderGenerateTrack() {
         UI::EndCombo();
     }
 
-    if(UI::Button("Generate")) {
-        Generate::GenerateTrack();
+    UI::Text("With this configuration, there are:");
+    UI::TextDisabled(Generate::startCount + " start parts");
+    UI::TextDisabled(Generate::partCount + " parts");
+    UI::TextDisabled(Generate::finishCount + " finish parts");
+    bool canGenerate = Generate::startCount > 0 && Generate::finishCount > 0 && !Generate::isGenerating;
+    if(!canGenerate)
+        UI::BeginDisabled();
+    if(UI::GreenButton((canGenerate ? "" : GetHourGlass() + " ") + "Generate")) 
+        startnew(Generate::GenerateTrack);
+    if(!canGenerate)
+        UI::EndDisabled();
+    UI::SameLine();
+    if(UI::Button("Reset to default")) {
+        GenOptions::ResetToDefault();
     }
     UI::PopTextWrapPos();
 }

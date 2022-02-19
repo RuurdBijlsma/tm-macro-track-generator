@@ -240,7 +240,7 @@ void RenderEnterDetailsState() {
         }
         UI::SameLine();
         UI::SetNextItemWidth(125);
-        partDetails.enterSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.enterSpeed, 10), 0, 999);
+        partDetails.enterSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.enterSpeed, 10), 0, 1000);
         UI::PopID();
     }
     if(partDetails.type != EPartType::Finish) {
@@ -255,7 +255,7 @@ void RenderEnterDetailsState() {
         }
         UI::SameLine();
         UI::SetNextItemWidth(125);
-        partDetails.exitSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.exitSpeed, 10), 0, 999);
+        partDetails.exitSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.exitSpeed, 10), 0, 1000);
         UI::PopID();
     }
     partDetails.duration = UI::InputInt("Duration (seconds)", partDetails.duration);
