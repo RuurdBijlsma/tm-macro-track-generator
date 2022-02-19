@@ -19,7 +19,6 @@ CGameCtnEditorCommon@ editor = null;
 CGameCtnApp@ app = null;
 
 void Main() {
-    
 }
 
 void Update(float dt) {

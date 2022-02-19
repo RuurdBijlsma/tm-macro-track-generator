@@ -4,6 +4,13 @@ bool initialized = false;
 MacroPart@[]@ allParts = {};
 MacroPart@[]@ filteredParts = {};
 bool isGenerating = false;
+int lastYield = 0;
+int startCount = 0;
+int partCount = 0;
+int finishCount = 0;
+dictionary@ usedParts = null;
+bool lastGenerateFailed = false;
+bool canceled = false;
 
 void Initialize() {
     GenOptions::Initialize();
@@ -14,7 +21,6 @@ void Initialize() {
 // Get MacroParts from macro folder
 MacroPart@[] GetMacroParts() {
     initialized = true;
-    print("Editor is null? " + (editor is null));
     auto pluginMapType = editor.PluginMapType;
     auto inventory = pluginMapType.Inventory;
     auto rootNodes = inventory.RootNodes;
@@ -28,7 +34,6 @@ MacroPart@[] GetMacroParts() {
                 for(uint k = 0; k < mbFolder.ChildNodes.Length; k++) {
                     auto articleNode = cast<CGameCtnArticleNodeArticle@>(mbFolder.ChildNodes[k]);
                     if(articleNode is null) continue;
-                    print(articleNode.Article.IdName);
                     auto macroblock = cast<CGameCtnMacroBlockInfo@>(articleNode.Article.LoadedNod);
                     if(macroblock is null) continue;
                     if(macroblock.IdName.StartsWith("temp_")) continue;
@@ -77,9 +82,6 @@ DirectedPosition@ FindStartPosition(CGameCtnMacroBlockInfo@ macroblock) {
     return null;
 }
 
-int startCount = 0;
-int partCount = 0;
-int finishCount = 0;
 MacroPart@[]@ GlobalFilterParts() {
     startCount = 0;
     partCount = 0;
@@ -174,6 +176,7 @@ void GenerateTrack() {
 
     isGenerating = true;
     UpdateFilteredParts();
+    @usedParts = GetUsedPartsDictionary();
 
     print("Found " + filteredParts.Length + " available parts after global filter is applied.");
 
@@ -182,13 +185,28 @@ void GenerateTrack() {
 
     lastYield = Time::Now;
     auto success = PlacePart();
+    if(canceled) {
+        print("was canceled");
+        canceled = false;
+        success = true;
+    }
+    lastGenerateFailed = !success;
     if(!success) {
         warn("Failed to create route :(");
     }
+
     isGenerating = false;
 }
 
-MacroPart@[]@ FilterParts(int speed, const EPartType &in type, MacroPart@[]@ usedParts) {
+dictionary GetUsedPartsDictionary() {
+    dictionary result;
+    for(uint i = 0; i < filteredParts.Length; i++) {
+        result.Set(filteredParts[i].ID, 0);
+    }
+    return result;
+}
+
+MacroPart@[]@ FilterParts(int speed, const EPartType &in type) {
     MacroPart@[]@ filtered = {};
     for(uint i = 0; i < filteredParts.Length; i++) {
         auto part = filteredParts[i];
@@ -196,33 +214,19 @@ MacroPart@[]@ FilterParts(int speed, const EPartType &in type, MacroPart@[]@ use
             continue;
         if(GenOptions::considerSpeed && Math::Abs(part.enterSpeed - speed) > GenOptions::maxSpeedVariation)
             continue;
-        if(GenOptions::reuse == EReuse::NoReuse && usedParts.FindByRef(part) != -1)
+        if(GenOptions::reuse == EReuse::NoReuse && int(usedParts[part.ID]) != 0)
             continue;
         filtered.InsertLast(part);
     }
     ShuffleParts(filtered);
     if(GenOptions::reuse == EReuse::PreferNoReuse) {
-        MacroPart@[]@ usedList = {};
-        MacroPart@[]@ unusedList = {};
-        for(uint i = 0; i < filtered.Length; i++) {
-            auto part = filtered[i];
-            if(usedParts.FindByRef(part) != -1){
-                usedList.InsertLast(part);
-            } else {
-                unusedList.InsertLast(part);
-            }
-        }
-        @filtered = {};
-        for(uint i = 0; i < unusedList.Length; i++)
-            filtered.InsertLast(unusedList[i]);
-        for(uint i = 0; i < usedList.Length; i++)
-            filtered.InsertLast(usedList[i]);
+        filtered = Sort::SortParts(filtered, usedParts);
     }
     return filtered;
 }
 
-int lastYield = 0;
-bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int duration = 0, MacroPart@[] usedParts = {}) {
+bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int duration = 0) {
+    if(canceled) return false;
     auto now = Time::Now;
     // prevent crash due to timeout
     if(GenOptions::animate || now - lastYield > 900){
@@ -235,7 +239,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
     } else {
         type = duration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
     }
-    MacroPart@[]@ possibleParts = FilterParts(incomingSpeed, type, usedParts);
+    MacroPart@[]@ possibleParts = FilterParts(incomingSpeed, type);
     bool finished = false;
 
     for(uint i = 0; i < possibleParts.Length; i++) {
@@ -266,16 +270,15 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
         }
         auto partEntrancePos = MTG::ToAbsolutePosition(part.macroblock, placePos, part.exit);
         partEntrancePos.MoveForward();
-        usedParts.InsertLast(part);
-        finished = PlacePart(partEntrancePos, part.exitSpeed, duration + part.duration, usedParts);
+        usedParts[part.ID] = int(usedParts[part.ID]) + 1;
+        finished = PlacePart(partEntrancePos, part.exitSpeed, duration + part.duration);
         if(finished) {
-            print("Finished!");
             break;
         } else {
             print("Removing!");
             if(GenOptions::animate)
                 yield();
-            usedParts.RemoveLast();
+            usedParts[part.ID] = int(usedParts[part.ID]) - 1;
             editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
             // return false;
         }

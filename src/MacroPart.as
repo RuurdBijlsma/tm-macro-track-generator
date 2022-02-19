@@ -48,6 +48,10 @@ class MacroPart {
         author = GetLocalLogin();
     }
 
+    string get_ID() {
+        return macroblock.IdName;
+    }
+
     bool get_HasCustomItems() {
         for(uint i = 0; i < embeddedItems.Length; i++) {
             if(embeddedItems[i].EndsWith(".Item.Gbx"))

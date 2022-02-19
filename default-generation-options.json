@@ -1,19 +1,5 @@
 {
-    "includeTags": [
-        "FullSpeed",
-        "Tech",
-        "Mixed",
-        "Nascar",
-        "Dirt",
-        "Bobsleigh",
-        "Grass",
-        "Ice",
-        "Plastic",
-        "Water",
-        "Sausage",
-        "RPG",
-        "Race"
-    ],
+    "includeTags": [],
     "excludeTags": [],
     "difficulties": [
         0,

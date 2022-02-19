@@ -34,7 +34,7 @@ void RenderInterface() {
     UI::PushStyleVar(UI::StyleVar::WindowRounding, 10.0);
     UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(10, 6));
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
-    UI::SetNextWindowSize(500, 695);
+    UI::SetNextWindowSize(500, 738);
     if(UI::Begin("Generate track", windowOpen)) {
         RenderGenerateTrack();
     }
@@ -61,11 +61,27 @@ void RenderGenerateTrack() {
     UI::TextDisabled(Generate::startCount + " start parts");
     UI::TextDisabled(Generate::partCount + " parts");
     UI::TextDisabled(Generate::finishCount + " finish parts");
-    bool canGenerate = Generate::startCount > 0 && Generate::finishCount > 0 && !Generate::isGenerating;
+
+    if(Generate::lastGenerateFailed) {
+        UI::Text(Icons::ExclamationTriangle + " Track failed to generate!");
+    } else {
+        UI::Text("");
+    }
+
+    bool canGenerate = Generate::startCount > 0 && Generate::finishCount > 0;
     if(!canGenerate)
         UI::BeginDisabled();
-    if(UI::GreenButton((canGenerate ? Icons::Random : GetHourGlass()) + " Generate")) 
-        startnew(Generate::GenerateTrack);
+    if(Generate::isGenerating) {
+        if(UI::IsKeyPressed(UI::Key::V)) {
+            Generate::canceled = true;
+        }
+        if(UI::RedButton(GetHourGlass() + ' "V" to cancel')) {
+            Generate::canceled = true;
+        }
+    } else {
+        if(UI::GreenButton(Icons::Random + " Generate"))
+            startnew(Generate::GenerateTrack);
+    }
     if(!canGenerate)
         UI::EndDisabled();
     UI::SameLine();
@@ -111,15 +127,17 @@ void RenderFilterOptions() {
         }
         UI::EndCombo();
     }
-    UI::SameLine();
-    if(UI::Button(Icons::Times)) {
-        GenOptions::ClearIncludeTags();
-        GenOptions::OnChange();
-    }
-    if (UI::IsItemHovered()) {
-        UI::BeginTooltip();
-        UI::Text("Clear tags");
-        UI::EndTooltip();
+    if(GenOptions::includeTags.Length > 0) {
+        UI::SameLine();
+        if(UI::Button(Icons::Times)) {
+            GenOptions::ClearIncludeTags();
+            GenOptions::OnChange();
+        }
+        if (UI::IsItemHovered()) {
+            UI::BeginTooltip();
+            UI::Text("Clear tags");
+            UI::EndTooltip();
+        }
     }
     UI::PopID();
 
@@ -146,15 +164,17 @@ void RenderFilterOptions() {
         }
         UI::EndCombo();
     }
-    UI::SameLine();
-    if(UI::Button(Icons::Times)) {
-        GenOptions::ClearExcludeTags();
-        GenOptions::OnChange();
-    }
-    if (UI::IsItemHovered()) {
-        UI::BeginTooltip();
-        UI::Text("Clear tags");
-        UI::EndTooltip();
+    if(GenOptions::excludeTags.Length > 0) {
+        UI::SameLine();
+        if(UI::Button(Icons::Times)) {
+            GenOptions::ClearExcludeTags();
+            GenOptions::OnChange();
+        }
+        if (UI::IsItemHovered()) {
+            UI::BeginTooltip();
+            UI::Text("Clear tags");
+            UI::EndTooltip();
+        }
     }
     UI::PopID();
 
@@ -199,6 +219,11 @@ void RenderFilterOptions() {
             if(UI::Selectable(tostring(availableReuses[i]), GenOptions::reuse == availableReuses[i])) 
                 GenOptions::reuse = availableReuses[i];
         UI::EndCombo();
+    }
+    if(GenOptions::reuse == EReuse::PreferNoReuse) {
+        UI::TextDisabled('"Prefer no reuse" reduces randomness of tracks.');
+    } else { 
+        UI::Text("");
     }
 }
 
