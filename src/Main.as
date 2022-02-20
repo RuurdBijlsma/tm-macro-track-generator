@@ -1,20 +1,22 @@
 //todo
 // -------------- priority high: ----------------
-// * UI for generating tracks
+// * after editing or creating a part, do GetAllParts again
+// * when macropart already exists, name it name(1).macroblock.gbx
+
 // -------------- priority low: ---------------
-// * stop yields in generate track om de timeout te omzeilen
+// * check mark in scripts menu for turning off plugin
+// * setting for turning off in-editor ui elements
 // * random macroblock kleuren
-// * Nicer UI for creating macropart (integrated in real editor UI)
+
 // * safety checks for editor is null
+// * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
+// * replace warns with warning notification
+
+// * first time user creates macropart, explain how to: non-block mode blocks cause the generator to intersect parts during generation + place in air mode + dont select ground + explain about item/block location
 // * Give warning when creating that non-block mode placed items can end up intersecting 
 //      so dont make large section with just ghost/free blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
-// * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
-// * use dictionary for macroblock count used in map and sort by that when doing EReuse::PreferNoReuse
-// * replace warns with warning notification
-// * when macropart already exists, name it name(1).macroblock.gbx
-// * first time user creates macropart, explain how to: non-block mode blocks cause the generator to intersect parts during generation + place in air mode + dont select ground + explain about item/block location
-// * after editing or creating a part, do GetAllParts again
+
 // --------------- not possible: ------------------
 // * find better way of deleting macroblock
 

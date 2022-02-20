@@ -391,6 +391,7 @@ void SelectNewMacroblock() {
 }
 
 void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
+    // todo: if mb name is already in format: macropartfolder \\ newName(n).Macroblock.Gbx, then dont delete
     if(macroblock is null) return;
     string oldRelPath = macroblock.IdName;
     print("oldPath: " + oldRelPath);
