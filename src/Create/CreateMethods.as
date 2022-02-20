@@ -9,6 +9,7 @@ enum EState {
     ConfirmItems,
     EnterDetails,
     SavedConfirmation,
+    AirMode,
     Failed
 };
 
@@ -23,7 +24,55 @@ string mbPath = "";
 
 EPartType entranceType = EPartType::Part;
 EPartType exitType = EPartType::Part;
+// for select entrance/exit UI:
+CGameCtnBlock@ blockInfo = null;
+string[]@ detectedTags = null;
 
+void Update() {
+    if(state == EState::SelectBlocks){
+        // wait for macroblock save
+        auto currentFrame = app.BasicDialogs.Dialogs.CurrentFrame;
+        if(currentFrame !is null && currentFrame.IdName == 'FrameDialogSaveAs') {
+            if(!changedSaveAsFilename) {
+                changedSaveAsFilename = true;
+                startnew(SelectNewMacroblock);
+            }
+        }
+    }
+    if(state == EState::SelectEntrance || state == EState::SelectExit) {
+        bool entrance = state == EState::SelectEntrance;
+        auto c = editor.PluginMapType.CursorCoord;
+        @blockInfo = editor.PluginMapType.GetBlock(int3(c.x, c.y, c.z));
+
+        if(editor.PluginMapType.PlaceMode != CGameEditorPluginMap::EPlaceMode::CustomSelection)
+            editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CustomSelection;
+        
+        EConnector connector = EConnector::Platform;
+        EPartType type = EPartType::Part;
+        @detectedTags = null;
+        if(blockInfo !is null) {
+            connector = GetConnector(blockInfo, editor.PluginMapType.CursorDir);
+            @detectedTags = GetTags(blockInfo.BlockInfo);
+            partDetails.AddTags(detectedTags);
+            if(entrance && blockInfo.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::Start) {
+                type = EPartType::Start;
+            } else if(!entrance && blockInfo.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::Finish) {
+                type = EPartType::Finish;
+            } else if(blockInfo.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::StartFinish) {
+                type = EPartType::Multilap;
+            } else {
+                type = EPartType::Part;
+            }
+        }
+        if(entrance){
+            entranceType = type;
+            partDetails.entranceConnector = connector;
+        } else {
+            exitType = type;
+            partDetails.exitConnector = connector;
+        }
+    }
+}
 
 bool OnKeyPress(bool down, VirtualKey key) {
     if(editor is null) return false;
@@ -32,10 +81,25 @@ bool OnKeyPress(bool down, VirtualKey key) {
         return PlaceUserMacroblockAtCursor();
     }
 
+    if(state == EState::AirMode && key == VirtualKey::V && down) {
+        if(editor.CurrentMacroBlockInfo is null) 
+            return false;
+        auto coord = editor.PluginMapType.CursorCoord;
+        auto placed = editor.PluginMapType.PlaceMacroblock_AirMode(editor.CurrentMacroBlockInfo, int3(coord.x, coord.y, coord.z), editor.PluginMapType.CursorDir);
+        if(placed) 
+            state = EState::Idle;
+    }
+
+    if(state == EState::AirMode && key == VirtualKey::Escape) {
+        state = EState::Idle;
+        return true;
+    }
+
     return false;
 }
 
 void CleanUp() {
+    if(state == EState::AirMode) return;
     auto tempMacroblock = MTG::GetBlocksFolder() + macroPartFolder + "\\temp_MTG.Macroblock.Gbx";
     if(IO::FileExists(tempMacroblock)) {
         print("Clean up " + tempMacroblock);
@@ -56,8 +120,59 @@ void PlaceBackMap() {
     }
 }
 
+void CreateNewMacroPart() {
+    // Reset variables
+    @partDetails = MacroPart();
+    if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
+        partDetails.author = editor.Challenge.AuthorNickName;
+        print("author name: " + partDetails.author);
+    }
+    copiedMap = false;
+    @macroPlace = null;
+    changedSaveAsFilename = false;
+
+    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CopyPaste;
+    isEditing = false;
+    state = EState::SelectBlocks;
+}
+
+void EditExistingMacroPart() {
+    // Reset variables
+    @partDetails = null;
+    copiedMap = false;
+    @macroPlace = null;
+    changedSaveAsFilename = false;
+
+    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
+    isEditing = true;
+    state = EState::SelectPlacement;
+}
+
 bool OnMouseButton(bool down, int button, int x, int y) {
     if(editor is null) return false;
+
+    if(button == 0 && down)
+        for(uint i = 0; i < Button::list.Length; i++) {
+            auto customButton = Button::list[i];
+            if(customButton.isHovered) {
+                if(customButton.action == "create") {
+                    CreateNewMacroPart();
+                } else if(customButton.action == "cancel") {
+                    CleanUp();
+                    state = EState::Idle;
+                } else if(customButton.action == "airmode") {
+                    state = EState::AirMode;
+                } else if(customButton.action == "edit") {
+                    EditExistingMacroPart();
+                } else if(customButton.action == "generate") {
+                    UI::ShowOverlay();
+                    Generate::selectedTabIndex = 0;
+                } else {
+                    warn("This button action wasn't implemented");
+                }
+                return true;
+            }
+        }
 
     auto isFreeLook = editor.PluginMapType.EditMode == CGameEditorPluginMap::EditMode::FreeLook;
     if(!isEditing && state == EState::SelectPlacement && button == 0 && down && !isFreeLook) {
@@ -111,6 +226,8 @@ bool OnMouseButton(bool down, int button, int x, int y) {
             state = EState::ConfirmItems;
         }
         windowColor = baseWindowColor;
+        UI::ShowOverlay();
+        Generate::selectedTabIndex = 2;
         return true;
     }
 

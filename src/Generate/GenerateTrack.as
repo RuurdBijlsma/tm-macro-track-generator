@@ -276,7 +276,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
             break;
         } else {
             print("Removing!");
-            if(GenOptions::animate)
+            if(GenOptions::animate && !canceled)
                 yield();
             usedParts[part.ID] = int(usedParts[part.ID]) - 1;
             editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);

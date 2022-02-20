@@ -12,6 +12,9 @@
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
 // * use dictionary for macroblock count used in map and sort by that when doing EReuse::PreferNoReuse
 // * replace warns with warning notification
+// * when macropart already exists, name it name(1).macroblock.gbx
+// * first time user creates macropart, explain how to: non-block mode blocks cause the generator to intersect parts during generation + place in air mode + dont select ground + explain about item/block location
+// * after editing or creating a part, do GetAllParts again
 // --------------- not possible: ------------------
 // * find better way of deleting macroblock
 
@@ -19,14 +22,24 @@ CGameCtnEditorCommon@ editor = null;
 CGameCtnApp@ app = null;
 
 void Main() {
+    Fonts::Load();
+}
+
+void Render() {
+    if(editor is null) return;
+    if(!Fonts::loaded) return;
+    auto driving = editor.PluginMapType.IsTesting || editor.PluginMapType.IsValidating;
+    if(!driving)
+        Create::RenderExtraUI();
 }
 
 void Update(float dt) {
     @app = GetApp();
     @editor = cast<CGameCtnEditorCommon>(app.Editor);
-    if(editor !is null && !Generate::initialized) {
+    if(!Generate::initialized) {
         Generate::Initialize();
     }
+    Create::Update();
 }
 
 bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key); }

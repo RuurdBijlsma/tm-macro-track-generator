@@ -2,6 +2,7 @@ namespace Generate {
 bool windowOpen = true;
 vec4 baseWindowColor = vec4(19. / 255, 18. / 255, 22. / 255, 1);
 vec4 windowColor = baseWindowColor;
+int selectedTabIndex = 0;
 
 void RenderInterface() {
     vec4 color = vec4(.8, 0.3, 0, 1);
@@ -35,7 +36,7 @@ void RenderInterface() {
     UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(10, 6));
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
     UI::SetNextWindowSize(500, 738);
-    if(UI::Begin("Generate track", windowOpen)) {
+    if(UI::Begin("Macro Track Generator", windowOpen)) {
         RenderGenerateTrack();
     }
 
@@ -47,46 +48,69 @@ void RenderInterface() {
 void RenderGenerateTrack() {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
     UI::BeginTabBar("gentabs");
-    if(UI::BeginTabItem("Generation")){
+    bool showGenerateButtons = true;
+    int flags = 0;
+    if(selectedTabIndex == 0) {
+        flags |= UI::TabItemFlags::SetSelected;
+        selectedTabIndex = -1;
+    }
+    if(UI::BeginTabItem("Generation", flags)) {
         RenderGenerationOptions();
         UI::EndTabItem();
     }
-    if(UI::BeginTabItem("Filter")){
+    flags = 0;
+    if(selectedTabIndex == 1) {
+        flags |= UI::TabItemFlags::SetSelected;
+        selectedTabIndex = -1;
+    }
+    if(UI::BeginTabItem("Filter", flags)) {
         RenderFilterOptions();
+        UI::EndTabItem();
+    }
+    flags = 0;
+    if(selectedTabIndex == 2) {
+        flags |= UI::TabItemFlags::SetSelected;
+        selectedTabIndex = -1;
+    }
+    if(UI::BeginTabItem("Create parts", flags)) {
+        showGenerateButtons = false;
+        Create::RenderInterface();
         UI::EndTabItem();
     }
     UI::EndTabBar();
 
-    UI::Text("With this configuration, there are:");
-    UI::TextDisabled(Generate::startCount + " start parts");
-    UI::TextDisabled(Generate::partCount + " parts");
-    UI::TextDisabled(Generate::finishCount + " finish parts");
+    if(showGenerateButtons){ 
+        UI::Text("With this configuration, there are:");
+        UI::TextDisabled(Generate::startCount + " start parts");
+        UI::TextDisabled(Generate::partCount + " parts");
+        UI::TextDisabled(Generate::finishCount + " finish parts");
 
-    if(Generate::lastGenerateFailed) {
-        UI::Text(Icons::ExclamationTriangle + " Track failed to generate!");
-    } else {
-        UI::Text("");
-    }
+        if(Generate::lastGenerateFailed) {
+            UI::Text(Icons::ExclamationTriangle + " Track failed to generate!");
+        } else {
+            UI::Text("");
+        }
 
-    bool canGenerate = Generate::startCount > 0 && Generate::finishCount > 0;
-    if(!canGenerate)
-        UI::BeginDisabled();
-    if(Generate::isGenerating) {
-        if(UI::IsKeyPressed(UI::Key::V)) {
-            Generate::canceled = true;
+        bool canGenerate = Generate::startCount > 0 && Generate::finishCount > 0;
+        if(!canGenerate)
+            UI::BeginDisabled();
+        if(Generate::isGenerating) {
+            if(UI::IsKeyPressed(UI::Key::V)) {
+                Generate::canceled = true;
+            }
+            if(UI::RedButton(GetHourGlass() + ' "V" to cancel')) {
+                Generate::canceled = true;
+            }
+        } else {
+            if(UI::GreenButton(Icons::Random + " Generate"))
+                startnew(Generate::GenerateTrack);
         }
-        if(UI::RedButton(GetHourGlass() + ' "V" to cancel')) {
-            Generate::canceled = true;
+        if(!canGenerate)
+            UI::EndDisabled();
+        UI::SameLine();
+        if(UI::Button("Reset to default")) {
+            GenOptions::ResetToDefault();
         }
-    } else {
-        if(UI::GreenButton(Icons::Random + " Generate"))
-            startnew(Generate::GenerateTrack);
-    }
-    if(!canGenerate)
-        UI::EndDisabled();
-    UI::SameLine();
-    if(UI::Button("Reset to default")) {
-        GenOptions::ResetToDefault();
     }
 
     UI::PopTextWrapPos();
