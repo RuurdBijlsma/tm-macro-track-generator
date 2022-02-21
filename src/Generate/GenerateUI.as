@@ -1,13 +1,28 @@
 namespace Generate {
-bool windowOpen = true;
-vec4 baseWindowColor = vec4(19. / 255, 18. / 255, 22. / 255, 1);
+bool windowOpen = IsDevMode();
+vec4 baseWindowColor = vec4(6. / 255, 131. / 255, 84. / 255, .97);
 vec4 windowColor = baseWindowColor;
 int selectedTabIndex = 0;
 
 void RenderInterface() {
-    vec4 color = vec4(.8, 0.3, 0, 1);
+    if(!windowOpen) return;
 
-    UI::PushStyleColor(UI::Col::FrameBg , vec4(1, 1, 1, 0.03));
+    vec4 color = vec4(0. / 255, 165. / 255, 101. / 255, 1);
+    vec4 buttonHover = vec4(0. / 255, 50. / 255, 40. / 255, 1);
+    vec4 titleBg = vec4(55. / 255, 198. / 255, 125. / 255, 1);
+    vec4 inputBg = vec4(5. / 255, 112. / 255, 69. / 255, 1);
+    vec4 textDisabled = vec4(1, 1, 1, .6);
+    vec4 textSelect = vec4(51. / 255, 51. / 255, 102. / 255, 1);
+    vec4 headerHovered = vec4(16. / 255, 100. / 255, 113. / 255, 1);
+
+    UI::PushStyleColor(UI::Col::ScrollbarGrab, color * vec4(1, 1, 1, 0.3));
+    UI::PushStyleColor(UI::Col::ScrollbarGrabHovered, color * vec4(1, 1, 1, 0.6));
+    UI::PushStyleColor(UI::Col::ScrollbarGrabActive, color * vec4(1, 1, 1, 0.8));
+    UI::PushStyleColor(UI::Col::ResizeGrip, color * vec4(1, 1, 1, 0.3));
+    UI::PushStyleColor(UI::Col::ResizeGripHovered, color * vec4(1, 1, 1, 0.6));
+    UI::PushStyleColor(UI::Col::ResizeGripActive, color * vec4(1, 1, 1, 0.8));
+    UI::PushStyleColor(UI::Col::TextDisabled, textDisabled);
+    UI::PushStyleColor(UI::Col::FrameBg , inputBg);
     UI::PushStyleColor(UI::Col::FrameBgHovered, color * vec4(1.7f, 1.7f, 1.7f, 0.2f));
     UI::PushStyleColor(UI::Col::FrameBgActive, color * vec4(1.7f, 1.7f, 1.7f, 0.4f));
     UI::PushStyleColor(UI::Col::ChildBg, vec4(1, 1, 1, .007));
@@ -15,38 +30,40 @@ void RenderInterface() {
     UI::PushStyleColor(UI::Col::TabHovered, color * vec4(1.2f, 1.2f, 1.2f, 0.85f));
     UI::PushStyleColor(UI::Col::TabActive, color);
     UI::PushStyleColor(UI::Col::Header, color * vec4(0.5f, 0.5f, 0.5f, 0.75f));
-    UI::PushStyleColor(UI::Col::HeaderHovered, color * vec4(1.2f, 1.2f, 1.2f, 0.85f));
+    UI::PushStyleColor(UI::Col::HeaderHovered, headerHovered);
     UI::PushStyleColor(UI::Col::HeaderActive, color);
     UI::PushStyleColor(UI::Col::Separator, color * vec4(1.7f, 1.7f, 1.7f, 0.5));
-    UI::PushStyleColor(UI::Col::Button, color * vec4(1.7f, 1.7f, 1.7f, 0.5f));
-    UI::PushStyleColor(UI::Col::ButtonHovered, color * vec4(1.7f, 1.7f, 1.7f, 0.5f));
-    UI::PushStyleColor(UI::Col::ButtonActive, color * vec4(1.7f, 1.7f, 1.7f, 0.7f));
-    UI::PushStyleColor(UI::Col::TextSelectedBg, color * vec4(1.7f, 1.7f, 1.7f, 0.3f));
+    UI::PushStyleColor(UI::Col::Button, color);
+    UI::PushStyleColor(UI::Col::ButtonHovered, buttonHover);
+    UI::PushStyleColor(UI::Col::ButtonActive, buttonHover * vec4(1.7f, 1.7f, 1.7f, 0.7f));
+    UI::PushStyleColor(UI::Col::TextSelectedBg, textSelect);
     UI::PushStyleColor(UI::Col::CheckMark, color * vec4(1.7f, 1.7f, 1.7f, 0.8f));
 
-    UI::PushStyleColor(UI::Col::TitleBg, windowColor * vec4(1.1, 1.1, 1.1, 1));
-    UI::PushStyleColor(UI::Col::TitleBgActive, windowColor * vec4(1.5, 1.5, 1.5, 1));
+    UI::PushStyleColor(UI::Col::TitleBg, titleBg * vec4(.8, .8, .8, 1));
+    UI::PushStyleColor(UI::Col::TitleBgActive, titleBg);
     UI::PushStyleColor(UI::Col::WindowBg, windowColor);
 
     UI::PushStyleVar(UI::StyleVar::ChildRounding, 5.0);
     UI::PushStyleVar(UI::StyleVar::CellPadding, vec2(12, 6));
+    UI::PushStyleVar(UI::StyleVar::ScrollbarSize, 13.);
+    UI::PushStyleVar(UI::StyleVar::ScrollbarRounding, 10.);
 
-    UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(10, 10));
-    UI::PushStyleVar(UI::StyleVar::WindowRounding, 10.0);
-    UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(10, 6));
+    UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(20, 10));
+    UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(40, 20));
+    UI::PushStyleVar(UI::StyleVar::WindowRounding, 20.0);
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
-    UI::SetNextWindowSize(500, 738);
+    UI::SetNextWindowSize(550, 738);
     if(UI::Begin("Macro Track Generator", windowOpen)) {
         RenderGenerateTrack();
     }
 
     UI::End();
-    UI::PopStyleVar(6);
-    UI::PopStyleColor(19);
+    UI::PopStyleVar(8);
+    UI::PopStyleColor(26);
 }
 
 void RenderGenerateTrack() {
-    UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
+    UI::PushTextWrapPos(UI::GetWindowContentRegionWidth() + 20);
     UI::BeginTabBar("gentabs");
     bool showGenerateButtons = true;
     int flags = 0;
@@ -91,6 +108,10 @@ void RenderGenerateTrack() {
             UI::Text("");
         }
 
+        if(Generate::isGenerating) {
+            UI::Text("Generated map duration: " + Generate::generatedMapDuration + " s");
+        }
+
         bool canGenerate = Generate::startCount > 0 && Generate::finishCount > 0;
         if(!canGenerate)
             UI::BeginDisabled();
@@ -98,17 +119,17 @@ void RenderGenerateTrack() {
             if(UI::IsKeyPressed(UI::Key::V)) {
                 Generate::canceled = true;
             }
-            if(UI::RedButton(GetHourGlass() + ' "V" to cancel')) {
+            if(TMUI::RedButton(GetHourGlass() + ' "V" to cancel')) {
                 Generate::canceled = true;
             }
         } else {
-            if(UI::GreenButton(Icons::Random + " Generate"))
+            if(TMUI::Button(Icons::Random + " Generate"))
                 startnew(Generate::GenerateTrack);
         }
         if(!canGenerate)
             UI::EndDisabled();
         UI::SameLine();
-        if(UI::Button("Reset to default")) {
+        if(TMUI::Button("Reset to default")) {
             GenOptions::ResetToDefault();
         }
     }
@@ -117,14 +138,15 @@ void RenderGenerateTrack() {
 }
 
 void RenderGenerationOptions() {
-    GenOptions::useSeed = UI::Checkbox("Use seed", GenOptions::useSeed);
+    GenOptions::useSeed = TMUI::Checkbox("Use seed", GenOptions::useSeed);
     if(GenOptions::useSeed) {
         GenOptions::seed = UI::InputText("Seed", GenOptions::seed);
     }
-    GenOptions::animate = UI::Checkbox("Animate generation process", GenOptions::animate);
+    GenOptions::animate = TMUI::Checkbox("Animate generation process", GenOptions::animate);
     UI::TextDisabled("The generation process is much slower when animating.");
-    GenOptions::airMode = UI::Checkbox("Use airmode to place blocks", GenOptions::airMode);
+    GenOptions::airMode = TMUI::Checkbox("Use airmode to place blocks", GenOptions::airMode);
     UI::TextDisabled("Track generation is more restricted with airmode turned off, because the wood supports can get in the way.");
+    GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
 }
 
 void RenderFilterOptions() {
@@ -153,7 +175,7 @@ void RenderFilterOptions() {
     }
     if(GenOptions::includeTags.Length > 0) {
         UI::SameLine();
-        if(UI::Button(Icons::Times)) {
+        if(TMUI::Button(Icons::Times)) {
             GenOptions::ClearIncludeTags();
             GenOptions::OnChange();
         }
@@ -190,7 +212,7 @@ void RenderFilterOptions() {
     }
     if(GenOptions::excludeTags.Length > 0) {
         UI::SameLine();
-        if(UI::Button(Icons::Times)) {
+        if(TMUI::Button(Icons::Times)) {
             GenOptions::ClearExcludeTags();
             GenOptions::OnChange();
         }
@@ -222,18 +244,17 @@ void RenderFilterOptions() {
         UI::EndCombo();
     }
 
-    GenOptions::allowCustomItems = UI::Checkbox("Custom items", GenOptions::allowCustomItems);
+    GenOptions::allowCustomItems = TMUI::Checkbox("Custom items", GenOptions::allowCustomItems);
     UI::SameLine();
-    GenOptions::allowCustomBlocks = UI::Checkbox("Custom blocks", GenOptions::allowCustomBlocks);
-    GenOptions::respawnable = UI::Checkbox("Parts must be respawnable", GenOptions::respawnable);
-    GenOptions::considerSpeed = UI::Checkbox("Consider speed when connecting parts", GenOptions::considerSpeed);
+    GenOptions::allowCustomBlocks = TMUI::Checkbox("Custom blocks", GenOptions::allowCustomBlocks);
+    GenOptions::respawnable = TMUI::Checkbox("Parts must be respawnable", GenOptions::respawnable);
+    GenOptions::considerSpeed = TMUI::Checkbox("Consider speed when connecting parts", GenOptions::considerSpeed);
     if(GenOptions::considerSpeed) {
         UI::TextDisabled("Maximum difference in speed between parts:");
         GenOptions::maxSpeedVariation = Math::Clamp(UI::InputInt("Max speed difference", GenOptions::maxSpeedVariation, 10), 0, 990);
     }
     GenOptions::maxSpeed = Math::Clamp(UI::InputInt("Maximum speed", GenOptions::maxSpeed, 10), GenOptions::minSpeed + 10, 1000);
     GenOptions::minSpeed = Math::Clamp(UI::InputInt("Minimum speed", GenOptions::minSpeed, 10), 0, GenOptions::maxSpeed - 10);
-    GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
 
     GenOptions::author = UI::InputText("Author", GenOptions::author);
     UI::TextDisabled("Leave author empty to allow any author.");

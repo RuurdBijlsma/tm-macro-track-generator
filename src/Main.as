@@ -1,18 +1,15 @@
 //todo
 // -------------- priority high: ----------------
-// * after editing or creating a part, do GetAllParts again
-// * when macropart already exists, name it name(1).macroblock.gbx
 
 // -------------- priority low: ---------------
 // * check mark in scripts menu for turning off plugin
 // * setting for turning off in-editor ui elements
-// * random macroblock kleuren
+// * (random) macroblock kleuren
 
-// * safety checks for editor is null
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
 // * replace warns with warning notification
+// * show user list of all macroparts -> let user disable individual parts
 
-// * first time user creates macropart, explain how to: non-block mode blocks cause the generator to intersect parts during generation + place in air mode + dont select ground + explain about item/block location
 // * Give warning when creating that non-block mode placed items can end up intersecting 
 //      so dont make large section with just ghost/free blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
@@ -25,34 +22,31 @@ CGameCtnApp@ app = null;
 
 void Main() {
     Fonts::Load();
+    GenOptions::Initialize();
 }
 
 void Render() {
     if(editor is null) return;
     if(!Fonts::loaded) return;
     auto driving = editor.PluginMapType.IsTesting || editor.PluginMapType.IsValidating;
-    if(!driving)
-        Create::RenderExtraUI();
+    if(!driving){
+        Create::RenderNativeUI();
+        Generate::RenderInterface();
+    }
 }
 
 void Update(float dt) {
     @app = GetApp();
-    @editor = cast<CGameCtnEditorCommon>(app.Editor);
-    if(!Generate::initialized) {
+    auto newEditor = cast<CGameCtnEditorCommon>(app.Editor);
+    bool enteredEditor = false;
+    if(editor is null && newEditor !is null) 
+        enteredEditor = true;
+    @editor = newEditor;
+    if(enteredEditor)
         Generate::Initialize();
-    }
+    if(editor is null) return;
     Create::Update();
 }
 
 bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key); }
 bool OnMouseButton(bool down, int button, int x, int y){ return Create::OnMouseButton(down, button, x, y); }
-
-void RenderInterface() {
-    if(editor !is null) {
-        auto driving = editor.PluginMapType.IsTesting || editor.PluginMapType.IsValidating;
-        if(!driving) { 
-            Create::RenderInterface();
-            Generate::RenderInterface();
-        }
-    }
-}

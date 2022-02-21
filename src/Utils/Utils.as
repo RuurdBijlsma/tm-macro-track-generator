@@ -56,3 +56,7 @@ void ShuffleParts(MacroPart@[]@ parts){
         @parts[i] = t;
     }
 }
+
+bool IsDevMode(){
+    return Meta::ExecutingPlugin().Type == Meta::PluginType::Folder;
+}

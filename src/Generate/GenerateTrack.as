@@ -11,9 +11,9 @@ int finishCount = 0;
 dictionary@ usedParts = null;
 bool lastGenerateFailed = false;
 bool canceled = false;
+int generatedMapDuration = 0;
 
 void Initialize() {
-    GenOptions::Initialize();
     @allParts = GetMacroParts();
     UpdateFilteredParts();
 }
@@ -175,16 +175,17 @@ void GenerateTrack() {
         Random::SetSeed(GenOptions::seed);
 
     isGenerating = true;
-    UpdateFilteredParts();
+    Initialize();
     @usedParts = GetUsedPartsDictionary();
+    generatedMapDuration = 0;
 
     print("Found " + filteredParts.Length + " available parts after global filter is applied.");
 
     // clear map for testing
-    editor.PluginMapType.RemoveAllBlocks();
+    MTG::ClearMap();
 
     lastYield = Time::Now;
-    auto success = PlacePart();
+    bool success = PlacePart();
     if(canceled) {
         print("was canceled");
         canceled = false;
@@ -225,11 +226,11 @@ MacroPart@[]@ FilterParts(int speed, const EPartType &in type) {
     return filtered;
 }
 
-bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int duration = 0) {
+bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
     if(canceled) return false;
     auto now = Time::Now;
     // prevent crash due to timeout
-    if(GenOptions::animate || now - lastYield > 900){
+    if(GenOptions::animate || now - lastYield > 150){
         lastYield = now;
         yield();
     }
@@ -237,7 +238,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
     if(connectPoint is null) {
         type = EPartType::Start;
     } else {
-        type = duration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
+        type = generatedMapDuration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
     }
     MacroPart@[]@ possibleParts = FilterParts(incomingSpeed, type);
     bool finished = false;
@@ -254,7 +255,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
             @placePos = MTG::NorthArrowToCursor(part.macroblock, northArrow);
         }
         bool canPlace = editor.PluginMapType.CanPlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
-        print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + duration);
+        // print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + generatedMapDuration);
         if(!canPlace) 
             continue;
         bool placed;
@@ -271,16 +272,17 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0, int
         auto partEntrancePos = MTG::ToAbsolutePosition(part.macroblock, placePos, part.exit);
         partEntrancePos.MoveForward();
         usedParts[part.ID] = int(usedParts[part.ID]) + 1;
-        finished = PlacePart(partEntrancePos, part.exitSpeed, duration + part.duration);
+        generatedMapDuration += part.duration;
+        finished = PlacePart(partEntrancePos, part.exitSpeed);
         if(finished) {
             break;
-        } else {
-            print("Removing!");
-            if(GenOptions::animate && !canceled)
+        } else if(!canceled) {
+            // print("Removing!");
+            if(GenOptions::animate)
                 yield();
+            generatedMapDuration -= part.duration;
             usedParts[part.ID] = int(usedParts[part.ID]) - 1;
             editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
-            // return false;
         }
     }
     

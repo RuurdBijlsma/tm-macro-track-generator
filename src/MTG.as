@@ -1,5 +1,15 @@
 namespace MTG {
 
+void ClearMap() {
+    editor.PluginMapType.RemoveAllBlocks();
+    // there may be items left in the map, remove as follows:
+    if(editor.Challenge.AnchoredObjects.Length > 0) {
+        auto placeMode = editor.PluginMapType.PlaceMode;
+        CutMap();
+        editor.PluginMapType.PlaceMode = placeMode;
+    }
+}
+
 string GetTrackmaniaFolder() {
     return IO::FromUserGameFolder("");
 }

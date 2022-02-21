@@ -1,8 +1,5 @@
 namespace Create {
-bool windowOpen = true;
 string failureReason = "";
-vec4 baseWindowColor = vec4(19. / 255, 18. / 255, 22. / 255, 1);
-vec4 windowColor = baseWindowColor;
 float mouseX = 0;
 float mouseY = 0;
 vec4 lightTextColor = vec4(1, 1, 1, .8);
@@ -11,7 +8,7 @@ vec4 shadowColor = vec4(0, 0, 0, 1);
 vec4 buttonBackdropColor = vec4(61. / 255, 61. / 255, 61. / 255, 237. / 255);
 string hintText = "";
 
-void RenderExtraUI() {
+void RenderNativeUI() {
     if(state == EState::SelectBlocks){
         hintText = "Select the blocks for this part, click the " + Icons::Kenney::Save + " button when done.";
     }
@@ -66,6 +63,7 @@ void RenderExtraUI() {
             if(editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::Macroblock || editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::FreeMacroblock) {
                 Button::mtgAirmode.visible = true;
             }
+            Button::mtgClear.visible = true;
             Button::mtgGenerate.visible = true;
             if(state == EState::Idle) {
                 Button::mtgCreate.visible = true;
@@ -163,7 +161,7 @@ void RenderInterface() {
     if(state == EState::SavedConfirmation)
         RenderSavedConfirmationState();
 
-    if(state != EState::Idle && state != EState::SavedConfirmation && UI::OrangeButton("Cancel creating MacroPart")) {
+    if(state != EState::Idle && state != EState::SavedConfirmation && TMUI::Button("Cancel creating MacroPart")) {
         CleanUp();
         state = EState::Idle;
     }
@@ -172,7 +170,7 @@ void RenderInterface() {
 void RenderFailedState() {
     UI::Text("Something went wrong!");
     UI::Text(failureReason);
-    if(UI::Button("Go back")) {
+    if(TMUI::Button("Go back")) {
         state = EState::Idle;
     }
 }
@@ -234,7 +232,7 @@ void RenderConfirmItemsState() {
     }
     UI::EndChild();
 
-    if(UI::Button("Confirm items")) {
+    if(TMUI::Button("Confirm items")) {
         state = EState::EnterDetails;
     }
 }
@@ -282,7 +280,7 @@ void RenderEnterDetailsState() {
     if(partDetails.type != EPartType::Start) {
         UI::PushID('entrance');
         UI::TextDisabled("Entrance");
-        UI::SetNextItemWidth(122);
+        UI::SetNextItemWidth(125);
         if(UI::BeginCombo("Connector", tostring(partDetails.entranceConnector))) {
             for(uint i = 0; i < availableConnectors.Length; i++) 
                 if(UI::Selectable(tostring(availableConnectors[i]), partDetails.entranceConnector == availableConnectors[i])) 
@@ -290,14 +288,14 @@ void RenderEnterDetailsState() {
             UI::EndCombo();
         }
         UI::SameLine();
-        UI::SetNextItemWidth(125);
+        UI::SetNextItemWidth(154);
         partDetails.enterSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.enterSpeed, 10), 0, 1000);
         UI::PopID();
     }
     if(partDetails.type != EPartType::Finish) {
         UI::PushID('exit');
         UI::TextDisabled("Exit");
-        UI::SetNextItemWidth(122);
+        UI::SetNextItemWidth(125);
         if(UI::BeginCombo("Connector", tostring(partDetails.exitConnector))) {
             for(uint i = 0; i < availableConnectors.Length; i++) 
                 if(UI::Selectable(tostring(availableConnectors[i]), partDetails.exitConnector == availableConnectors[i])) 
@@ -305,17 +303,17 @@ void RenderEnterDetailsState() {
             UI::EndCombo();
         }
         UI::SameLine();
-        UI::SetNextItemWidth(125);
+        UI::SetNextItemWidth(154);
         partDetails.exitSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.exitSpeed, 10), 0, 1000);
         UI::PopID();
     }
     partDetails.duration = UI::InputInt("Duration (seconds)", partDetails.duration);
     if(partDetails.type != EPartType::Start) {
         UI::TextDisabled("Can you reach the end of this part starting with 0 speed?");
-        partDetails.respawnable = UI::Checkbox("Respawnable", partDetails.respawnable);
+        partDetails.respawnable = TMUI::Checkbox("Respawnable", partDetails.respawnable);
     }
 
-    if(UI::Button("Save MacroPart")) {
+    if(TMUI::Button("Save MacroPart")) {
         SaveMacroPart(partDetails);
         state = EState::SavedConfirmation;
     }
@@ -323,7 +321,7 @@ void RenderEnterDetailsState() {
 
 void RenderSavedConfirmationState() {
     UI::Text(Icons::Check + " Created MacroPart!");
-    if(UI::GreenButton("Ok")) {
+    if(TMUI::Button("Ok")) {
         state = EState::Idle;
     }
 }

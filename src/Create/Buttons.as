@@ -16,10 +16,17 @@ CustomButton@ cancel = CustomButton(
 );
 CustomButton@ mtgAirmode = CustomButton(
     "airmode", Icons::Cloud, 
-    193, 998,
+    138, 998,
     50, 50, 32,
     vec4(1, 1, 1, 1), vec4(1. / 255, 80. / 255, 40. / 255, 1),
     "Air macroblock mode"
+);
+CustomButton@ mtgClear = CustomButton(
+    "clear", Icons::Trash, 
+    193, 998,
+    50, 50, 32,
+    vec4(1, 1, 1, 1), vec4(1. / 255, 80. / 255, 40. / 255, 1),
+    "Clear map"
 );
 CustomButton@ mtgGenerate = CustomButton(
     "generate", Icons::Random, 
@@ -50,6 +57,6 @@ CustomButton@ mtgCancel = CustomButton(
     "Cancel creating MacroPart"
 );
 
-CustomButton@[]@ list = {create, cancel, mtgAirmode, mtgGenerate, mtgCreate, mtgEdit, mtgCancel};
+CustomButton@[]@ list = {create, cancel, mtgAirmode, mtgClear, mtgGenerate, mtgCreate, mtgEdit, mtgCancel};
 
 }

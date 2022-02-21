@@ -231,7 +231,7 @@ void ToFile() {
 }
 
 void OnChange() {
-    onChangeTimeout = 100;
+    onChangeTimeout = 30;
 }
 
 int onChangeTimeout = -1;

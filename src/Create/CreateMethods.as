@@ -98,56 +98,6 @@ bool OnKeyPress(bool down, VirtualKey key) {
     return false;
 }
 
-void CleanUp() {
-    if(state == EState::AirMode) return;
-    auto tempMacroblock = MTG::GetBlocksFolder() + macroPartFolder + "\\temp_MTG.Macroblock.Gbx";
-    if(IO::FileExists(tempMacroblock)) {
-        print("Clean up " + tempMacroblock);
-        IO::Delete(tempMacroblock);
-    }
-    PlaceBackMap();
-    windowColor = baseWindowColor;
-}
-
-void PlaceBackMap() {
-    if(copiedMap) {
-        // get back original map & remove placed macroblock
-        editor.PluginMapType.Undo();
-    } else {
-        // remove placed macroblock
-        editor.PluginMapType.Undo();
-        editor.PluginMapType.Redo();
-    }
-}
-
-void CreateNewMacroPart() {
-    // Reset variables
-    @partDetails = MacroPart();
-    if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
-        partDetails.author = editor.Challenge.AuthorNickName;
-        print("author name: " + partDetails.author);
-    }
-    copiedMap = false;
-    @macroPlace = null;
-    changedSaveAsFilename = false;
-
-    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CopyPaste;
-    isEditing = false;
-    state = EState::SelectBlocks;
-}
-
-void EditExistingMacroPart() {
-    // Reset variables
-    @partDetails = null;
-    copiedMap = false;
-    @macroPlace = null;
-    changedSaveAsFilename = false;
-
-    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
-    isEditing = true;
-    state = EState::SelectPlacement;
-}
-
 bool OnMouseButton(bool down, int button, int x, int y) {
     if(editor is null) return false;
 
@@ -165,8 +115,10 @@ bool OnMouseButton(bool down, int button, int x, int y) {
                 } else if(customButton.action == "edit") {
                     EditExistingMacroPart();
                 } else if(customButton.action == "generate") {
-                    UI::ShowOverlay();
                     Generate::selectedTabIndex = 0;
+                    Generate::windowOpen = !Generate::windowOpen;
+                } else if(customButton.action == "clear") {
+                    MTG::ClearMap();
                 } else {
                     warn("This button action wasn't implemented");
                 }
@@ -185,7 +137,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         @partDetails.entrance = MTG::ToRelativePosition(partDetails.macroblock, macroPlace, absEntrance);
         print("Entrance relative: " + partDetails.entrance.ToPrintString());
         state = EState::SelectExit;
-        windowColor = vec4(35./255, 1./255, 1./255, 1);
+        Generate::windowColor = vec4(35./255, 1./255, 1./255, 1);
         return true;
     }
     if(state == EState::SelectExit && button == 0 && down && !isFreeLook) {
@@ -225,13 +177,65 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         } else {
             state = EState::ConfirmItems;
         }
-        windowColor = baseWindowColor;
-        UI::ShowOverlay();
+        Generate::windowColor = Generate::baseWindowColor;
         Generate::selectedTabIndex = 2;
+        Generate::windowOpen = true;
         return true;
     }
 
     return false;
+}
+
+void CleanUp() {
+    if(state == EState::AirMode) return;
+    auto tempMacroblock = MTG::GetBlocksFolder() + macroPartFolder + "\\temp_MTG.Macroblock.Gbx";
+    if(IO::FileExists(tempMacroblock)) {
+        print("Clean up " + tempMacroblock);
+        IO::Delete(tempMacroblock);
+    }
+    PlaceBackMap();
+    Generate::windowColor = Generate::baseWindowColor;
+}
+
+void PlaceBackMap() {
+    if(copiedMap) {
+        // get back original map & remove placed macroblock
+        editor.PluginMapType.Undo();
+    } else {
+        // remove placed macroblock
+        editor.PluginMapType.Undo();
+        editor.PluginMapType.Redo();
+    }
+}
+
+void CreateNewMacroPart() {
+    Generate::selectedTabIndex = 2;
+    // Reset variables
+    @partDetails = MacroPart();
+    if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
+        partDetails.author = editor.Challenge.AuthorNickName;
+        print("author name: " + partDetails.author);
+    }
+    copiedMap = false;
+    @macroPlace = null;
+    changedSaveAsFilename = false;
+
+    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CopyPaste;
+    isEditing = false;
+    state = EState::SelectBlocks;
+}
+
+void EditExistingMacroPart() {
+    Generate::selectedTabIndex = 2;
+    // Reset variables
+    @partDetails = null;
+    copiedMap = false;
+    @macroPlace = null;
+    changedSaveAsFilename = false;
+
+    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
+    isEditing = true;
+    state = EState::SelectPlacement;
 }
 
 bool BlockFitsInDirection(CGameCtnBlock@ block,  CGameCtnBlockInfo@ otherBlock, CGameEditorPluginMap::ECardinalDirections direction) {
@@ -356,7 +360,7 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
     } else {
         editor.PluginMapType.PlaceMacroblock_AirMode(partDetails.macroblock, dirPos.position, dirPos.direction);
         state = EState::SelectEntrance;
-        windowColor = vec4(1./255, 30./255, 1./255, 1);
+        Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
     }
 }
 
@@ -395,12 +399,20 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
     if(macroblock is null) return;
     string oldRelPath = macroblock.IdName;
     print("oldPath: " + oldRelPath);
-    macroblock.IdName = "Stadium\\" + macroPartFolder + "\\" + newName + ".Macroblock.Gbx";
-    print("newPath: " + macroblock.IdName);
-    if(oldRelPath == macroblock.IdName) {
-        print("No need to rename, file is already named correctly");
-        return;
+    string newPath = "";
+    int i = 0;
+    while(true) {
+        string overwriteProtection = i == 0 ? "" : "(" + i + ")";
+        newPath = "Stadium\\" + macroPartFolder + "\\" + newName + overwriteProtection + ".Macroblock.Gbx";
+        if(newPath == oldRelPath) // old path was already in proper format, no need to rename
+            return;
+        if(!IO::FileExists(MTG::GetBlocksFolder() + newPath))
+            break;
+        i++;
+        print("MacroBlock already exists: " + newPath + ", adding (" + i + ") to end of filename");
     }
+    macroblock.IdName = newPath;
+    print("newPath: " + macroblock.IdName);
     editor.PluginMapType.SaveMacroblock(macroblock);
     auto oldPath = MTG::GetBlocksFolder() + oldRelPath;
     if(IO::FileExists(oldPath)) {
@@ -426,6 +438,7 @@ void SaveMacroPart(MacroPart@ part) {
     part.macroblock.Description = part.ToString() + MacroPart::BaseSeparator + base64Items;
     editor.PluginMapType.SaveMacroblock(part.macroblock);
     RenameMacroblock(part.macroblock, "MTG-" + part.author + "-" + part.name);
+    Generate::Initialize();
 }
 
 }
