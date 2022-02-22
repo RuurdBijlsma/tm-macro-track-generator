@@ -55,7 +55,7 @@ void RenderInterface() {
     UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(30, 15));
     UI::PushStyleVar(UI::StyleVar::WindowRounding, 20.0);
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
-    UI::SetNextWindowSize(550, 738);
+    UI::SetNextWindowSize(480, 738);
     UI::PushFont(Fonts::robotoRegular);
     if(UI::Begin("Macro Track Generator", windowOpen)) {
         RenderGenerateTrack();
@@ -94,20 +94,29 @@ void RenderGenerateTrack() {
         flags |= UI::TabItemFlags::SetSelected;
         selectedTabIndex = -1;
     }
-    if(UI::BeginTabItem("Create parts", flags)) {
+    if(UI::BeginTabItem("Parts", flags)) {
         tabIndex = 2;
+        showGenerateButtons = false;
+        UI::EndTabItem();
+    }
+    flags = 0;
+    if(selectedTabIndex == 3) {
+        flags |= UI::TabItemFlags::SetSelected;
+        selectedTabIndex = -1;
+    }
+    if(UI::BeginTabItem("Create parts", flags)) {
+        tabIndex = 3;
         showGenerateButtons = false;
         UI::EndTabItem();
     }
     UI::EndTabBar();
     
     UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(5, 5));
-    UI::BeginChild("tabcontent", vec2(UI::GetWindowContentRegionWidth(), UI::GetWindowSize().y - 320), true);
+    UI::BeginChild("tabcontent", vec2(UI::GetWindowContentRegionWidth(), UI::GetWindowSize().y - (showGenerateButtons ? 320 : 110)), true);
     if(tabIndex == 0) RenderGenerationOptions();
-    if(tabIndex == 1)
-        RenderFilterOptions();
-    if(tabIndex == 2)
-        Create::RenderInterface();
+    if(tabIndex == 1) RenderFilterOptions();
+    if(tabIndex == 2) Parts::RenderInterface();
+    if(tabIndex == 3) Create::RenderInterface();
     UI::EndChild();
     UI::PopStyleVar(1);
 
@@ -155,6 +164,8 @@ void RenderGenerateTrack() {
 }
 
 void RenderGenerationOptions() {
+    UI::PushTextWrapPos(UI::GetWindowContentRegionWidth() + 20);
+
     GenOptions::useSeed = TMUI::Checkbox("Use seed", GenOptions::useSeed);
     if(GenOptions::useSeed) {
         GenOptions::seed = UI::InputText("Seed", GenOptions::seed);
@@ -194,31 +205,16 @@ void RenderGenerationOptions() {
             }
         }
     }
+    UI::PopTextWrapPos();
 }
 
 void RenderFilterOptions() {
     // -------- Include tags ------------
     TMUI::TextDisabled("Parts must include one of the following tags (empty for all tags):");
     string iTagsString = "";
-    if(GenOptions::includeTags.Length == 0) 
-        iTagsString = "No tags selected";
-    for(uint i = 0; i < GenOptions::includeTags.Length; i++) {
-        if(i != 0) iTagsString += ", ";
-        iTagsString += GenOptions::includeTags[i];
-    }
     UI::PushID("includeTags");
-    if(UI::BeginCombo("Tags", iTagsString)) {
-        for(uint i = 0; i < availableTags.Length; i++) {
-            int foundIndex = GenOptions::includeTags.Find(availableTags[i]);
-            if(UI::Selectable(availableTags[i], foundIndex != -1)) {
-                if(foundIndex != -1)
-                    GenOptions::includeTags.RemoveAt(foundIndex);
-                else
-                    GenOptions::includeTags.InsertLast(availableTags[i]);
-                GenOptions::OnChange();
-            }
-        }
-        UI::EndCombo();
+    if(TagSelector(GenOptions::includeTags)) {
+        GenOptions::OnChange();
     }
     if(GenOptions::includeTags.Length > 0) {
         UI::SameLine();
@@ -236,26 +232,9 @@ void RenderFilterOptions() {
 
     // -------- Exclude tags ------------
     TMUI::TextDisabled("Parts may not include any of the following tags:");
-    string eTagsString = "";
-    if(GenOptions::excludeTags.Length == 0) 
-        eTagsString = "No tags selected";
-    for(uint i = 0; i < GenOptions::excludeTags.Length; i++) {
-        if(i != 0) eTagsString += ", ";
-        eTagsString += GenOptions::excludeTags[i];
-    }
     UI::PushID("excludeTags");
-    if(UI::BeginCombo("Tags", eTagsString)) {
-        for(uint i = 0; i < availableTags.Length; i++) {
-            int foundIndex = GenOptions::excludeTags.Find(availableTags[i]);
-            if(UI::Selectable(availableTags[i], foundIndex != -1)) {
-                if(foundIndex != -1)
-                    GenOptions::excludeTags.RemoveAt(foundIndex);
-                else
-                    GenOptions::excludeTags.InsertLast(availableTags[i]);
-                GenOptions::OnChange();
-            }
-        }
-        UI::EndCombo();
+    if(TagSelector(GenOptions::excludeTags)) {
+        GenOptions::OnChange();
     }
     if(GenOptions::excludeTags.Length > 0) {
         UI::SameLine();
@@ -298,7 +277,7 @@ void RenderFilterOptions() {
     GenOptions::considerSpeed = TMUI::Checkbox("Consider speed when connecting parts", GenOptions::considerSpeed);
     if(GenOptions::considerSpeed) {
         TMUI::TextDisabled("Maximum difference in speed between parts:");
-        GenOptions::maxSpeedVariation = Math::Clamp(UI::InputInt("Max speed difference", GenOptions::maxSpeedVariation, 10), 0, 990);
+        GenOptions::maxSpeedVariation = Math::Clamp(UI::InputInt("Max speed diff", GenOptions::maxSpeedVariation, 10), 0, 990);
     }
     GenOptions::maxSpeed = Math::Clamp(UI::InputInt("Maximum speed", GenOptions::maxSpeed, 10), GenOptions::minSpeed + 10, 1000);
     GenOptions::minSpeed = Math::Clamp(UI::InputInt("Minimum speed", GenOptions::minSpeed, 10), 0, GenOptions::maxSpeed - 10);
@@ -306,7 +285,7 @@ void RenderFilterOptions() {
     GenOptions::author = UI::InputText("Author", GenOptions::author);
     TMUI::TextDisabled("Leave author empty to allow any author.");
 
-    if(UI::BeginCombo("Allow reuse of parts?", tostring(GenOptions::reuse))) {
+    if(UI::BeginCombo("Allow part reuse?", tostring(GenOptions::reuse))) {
         for(uint i = 0; i < availableReuses.Length; i++) 
             if(UI::Selectable(tostring(availableReuses[i]), GenOptions::reuse == availableReuses[i])) 
                 GenOptions::reuse = availableReuses[i];

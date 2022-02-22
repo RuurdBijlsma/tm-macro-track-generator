@@ -16,7 +16,7 @@ bool Checkbox(const string &in label, bool value) {
 }
 
 void TextDisabled(const string &in text) {
-    UI::PushFont(Fonts::robotoLight);
+    UI::PushFont(Fonts::robotoLightItalic);
     UI::TextDisabled(text);
     UI::PopFont();
 }

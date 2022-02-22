@@ -178,7 +178,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
             state = EState::ConfirmItems;
         }
         Generate::windowColor = Generate::baseWindowColor;
-        Generate::selectedTabIndex = 2;
+        Generate::selectedTabIndex = 3;
         Generate::windowOpen = true;
         return true;
     }
@@ -209,7 +209,7 @@ void PlaceBackMap() {
 }
 
 void CreateNewMacroPart() {
-    Generate::selectedTabIndex = 2;
+    Generate::selectedTabIndex = 3;
     // Reset variables
     @partDetails = MacroPart();
     if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
@@ -226,7 +226,7 @@ void CreateNewMacroPart() {
 }
 
 void EditExistingMacroPart() {
-    Generate::selectedTabIndex = 2;
+    Generate::selectedTabIndex = 3;
     // Reset variables
     @partDetails = null;
     copiedMap = false;
@@ -266,7 +266,7 @@ EConnector GetConnector(CGameCtnBlock@ block, CGameEditorPluginMap::ECardinalDir
         editor.PluginMapType.GetBlockModelFromName('PlatformTechBase')
     };
     EConnector[] correspondingConnectors = {
-        EConnector::Platform,
+        EConnector::RoadTech,
         EConnector::RoadDirt,
         EConnector::RoadBump,
         EConnector::RoadIce,
@@ -281,6 +281,8 @@ EConnector GetConnector(CGameCtnBlock@ block, CGameEditorPluginMap::ECardinalDir
 
     // If nothing was found, try finding connection result by looking at block type
     auto rootPage = string(blockInfo.PageName).Split('/')[0];
+    if(rootPage == 'RoadTech')
+        return EConnector::RoadTech;
     if(rootPage == 'RoadDirt')
         return EConnector::RoadDirt;
     if(rootPage == 'RoadBump')
@@ -356,7 +358,7 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
         CleanUp();
         state = EState::Failed;
         failureReason = "Failed to find placement position for macro.";
-        warn("Failed to place macro!");
+        Warn("Failed to place macro!");
     } else {
         editor.PluginMapType.PlaceMacroblock_AirMode(partDetails.macroblock, dirPos.position, dirPos.direction);
         state = EState::SelectEntrance;

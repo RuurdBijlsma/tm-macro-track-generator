@@ -1,5 +1,6 @@
 enum EConnector {
     Platform,
+    RoadTech,
     RoadDirt,
     RoadIce,
     RoadBump,

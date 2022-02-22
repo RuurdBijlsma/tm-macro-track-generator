@@ -82,7 +82,7 @@ void RenderNativeUI() {
 
 void RenderHintText() {
     if(hintText == "") return;
-    nvg::FontFace(Fonts::droidSansBold);
+    nvg::FontFace(Fonts::montserratRegular);
     nvg::TextAlign(nvg::Align::Center | nvg::Align::Middle);
     nvg::FontSize(40);
     nvg::FillColor(shadowColor);
@@ -181,7 +181,7 @@ void RenderFailedState() {
 void RenderIdleState() {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
     UI::Text("Randomly generated tracks consist of 'MacroParts'. These are macroblocks with extra embedded information to help the generator connect parts together.");
-    UI::TextDisabled("Your available MacroParts can be found in the macroblocks tab below (F4), in the folder '" + macroPartFolder + "'.");
+    TMUI::TextDisabled("Your available MacroParts can be found in the macroblocks tab below (F4), in the folder '" + macroPartFolder + "'.");
     UI::NewLine();
     if(nativeButtons) {
         UI::Text("Click the " + Icons::FilePowerpointO + " button in the copy paste menu (C) to create a MacroPart.");
@@ -252,79 +252,7 @@ void RenderConfirmItemsState() {
 
 void RenderEnterDetailsState() {
     UI::Text("Enter MacroPart information");
-    // UI::SetKeyboardFocusHere();
-    partDetails.name = UI::InputText("Name", partDetails.name);
-
-    if(UI::BeginCombo("Type", tostring(partDetails.type))) {
-        for(uint i = 0; i < availableTypes.Length; i++) 
-            if(UI::Selectable(tostring(availableTypes[i]), partDetails.type == availableTypes[i])) 
-                partDetails.type = availableTypes[i];
-        UI::EndCombo();
-    }
-
-    string tagsString = "";
-    if(partDetails.tags.Length == 0) {
-        tagsString = "No tags selected";
-    }
-    for(uint i = 0; i < partDetails.tags.Length; i++) {
-        if(i != 0) tagsString += ", ";
-        tagsString += partDetails.tags[i];
-    }
-    if(UI::BeginCombo("Tags", tagsString)) {
-        for(uint i = 0; i < availableTags.Length; i++) {
-            int foundIndex = partDetails.tags.Find(availableTags[i]);
-            if(UI::Selectable(availableTags[i], foundIndex != -1)) {
-                if(foundIndex != -1)
-                    partDetails.tags.RemoveAt(foundIndex);
-                else
-                    partDetails.tags.InsertLast(availableTags[i]);
-            }
-        }
-        UI::EndCombo();
-    }
-
-    if(UI::BeginCombo("Difficulty", tostring(partDetails.difficulty))) {
-        for(uint i = 0; i < availableDifficulties.Length; i++) 
-            if(UI::Selectable(tostring(availableDifficulties[i]), partDetails.difficulty == availableDifficulties[i])) 
-                partDetails.difficulty = availableDifficulties[i];
-        UI::EndCombo();
-    }
-
-    if(partDetails.type != EPartType::Start) {
-        UI::PushID('entrance');
-        UI::TextDisabled("Entrance");
-        UI::SetNextItemWidth(125);
-        if(UI::BeginCombo("Connector", tostring(partDetails.entranceConnector))) {
-            for(uint i = 0; i < availableConnectors.Length; i++) 
-                if(UI::Selectable(tostring(availableConnectors[i]), partDetails.entranceConnector == availableConnectors[i])) 
-                    partDetails.entranceConnector = availableConnectors[i];
-            UI::EndCombo();
-        }
-        UI::SameLine();
-        UI::SetNextItemWidth(154);
-        partDetails.enterSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.enterSpeed, 10), 0, 1000);
-        UI::PopID();
-    }
-    if(partDetails.type != EPartType::Finish) {
-        UI::PushID('exit');
-        UI::TextDisabled("Exit");
-        UI::SetNextItemWidth(125);
-        if(UI::BeginCombo("Connector", tostring(partDetails.exitConnector))) {
-            for(uint i = 0; i < availableConnectors.Length; i++) 
-                if(UI::Selectable(tostring(availableConnectors[i]), partDetails.exitConnector == availableConnectors[i])) 
-                    partDetails.exitConnector = availableConnectors[i];
-            UI::EndCombo();
-        }
-        UI::SameLine();
-        UI::SetNextItemWidth(154);
-        partDetails.exitSpeed = Math::Clamp(UI::InputInt("Speed", partDetails.exitSpeed, 10), 0, 1000);
-        UI::PopID();
-    }
-    partDetails.duration = UI::InputInt("Duration (seconds)", partDetails.duration);
-    if(partDetails.type != EPartType::Start) {
-        UI::TextDisabled("Can you reach the end of this part starting with 0 speed?");
-        partDetails.respawnable = TMUI::Checkbox("Respawnable", partDetails.respawnable);
-    }
+    PartEditor(partDetails);
 
     if(TMUI::Button("Save MacroPart")) {
         SaveMacroPart(partDetails);

@@ -11,6 +11,8 @@
 //      so dont make large section with just ghost/free blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
+// * When deleting a part either through rename or through delete button, mark it deleted for GetAllParts()
+
 // --------------- not possible: ------------------
 // * find better way of deleting macroblock
 

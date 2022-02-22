@@ -1,5 +1,5 @@
 void Warn(const string &in text, int time = 7000) {
-    UI::ShowNotification("Warning - Macro Track Generator", text, vec4(.5, .7, 0, 1), time)
+    UI::ShowNotification("Warning - Macro Track Generator", text, vec4(.5, .4, 0, 1), time);
 }
 
 string GetHourGlass(){
