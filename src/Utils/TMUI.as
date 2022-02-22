@@ -8,10 +8,17 @@ bool Button(const string &in label) {
 }
 
 bool Checkbox(const string &in label, bool value) {
+    UI::PushStyleVar(UI::StyleVar::FrameRounding, 6);
     UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(6, 6));
     bool v = UI::Checkbox(label, value);
-    UI::PopStyleVar(1);
+    UI::PopStyleVar(2);
     return v;
+}
+
+void TextDisabled(const string &in text) {
+    UI::PushFont(Fonts::robotoLight);
+    UI::TextDisabled(text);
+    UI::PopFont();
 }
 
 bool ColoredButton(const string &in text, float h, float s = 0.6f, float v = 0.6f) {

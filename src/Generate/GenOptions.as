@@ -4,6 +4,22 @@ enum EReuse {
     NoReuse
 };
 EReuse[] availableReuses = {EReuse::Reuse, EReuse::PreferNoReuse, EReuse::NoReuse};
+CGameEditorPluginMap::EMapElemColor[] availableColors = {
+    CGameEditorPluginMap::EMapElemColor::Default, 
+    CGameEditorPluginMap::EMapElemColor::White,
+    CGameEditorPluginMap::EMapElemColor::Green,
+    CGameEditorPluginMap::EMapElemColor::Blue,
+    CGameEditorPluginMap::EMapElemColor::Red,
+    CGameEditorPluginMap::EMapElemColor::Black
+};
+vec4[]@ colorVecs = {
+    vec4(.5, .5, .5, 1),
+    vec4(1, 1, 1, 1),
+    vec4(0, 1, 0, 1),
+    vec4(0, 0, 1, 1),
+    vec4(1, 0, 0, 1),
+    vec4(0, 0, 0, 1)
+};
 
 
 namespace GenOptions {
@@ -14,6 +30,38 @@ string[]@ excludeTags = {};
 // - difficulty range
 EDifficulty[]@ difficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
 
+float _startHeight = 0.5;
+float get_startHeight(){return _startHeight;}
+void set_startHeight(float v) {
+    if(_startHeight != v) {
+        OnChange();
+        _startHeight = v;
+    }
+}
+bool _autoColoring = false;
+bool get_autoColoring(){return _autoColoring;}
+void set_autoColoring(bool v) {
+    if(_autoColoring != v) {
+        OnChange();
+        _autoColoring = v;
+    }
+}
+bool _forceColor = false;
+bool get_forceColor(){return _forceColor;}
+void set_forceColor(bool v) {
+    if(_forceColor != v) {
+        OnChange();
+        _forceColor = v;
+    }
+}
+CGameEditorPluginMap::EMapElemColor _color = CGameEditorPluginMap::EMapElemColor::Black;
+CGameEditorPluginMap::EMapElemColor get_color(){return _color;}
+void set_color(CGameEditorPluginMap::EMapElemColor v) {
+    if(_color != v) {
+        OnChange();
+        _color = v;
+    }
+}
 bool _useSeed = false;
 bool get_useSeed(){return _useSeed;}
 void set_useSeed(bool v) {
@@ -164,6 +212,10 @@ Json::Value ToJson() {
     obj["difficulties"] = Json::Array();
     for(uint i = 0; i < difficulties.Length; i++)
         obj["difficulties"].Add(difficulties[i]);
+    obj["startHeight"] = startHeight;
+    obj["forceColor"] = forceColor;
+    obj["autoColoring"] = autoColoring;
+    obj["color"] = color;
     obj["useSeed"] = useSeed;
     obj["seed"] = seed;
     obj["animate"] = animate;
@@ -197,10 +249,15 @@ void FromJson(Json::Value obj) {
         int intDiff = obj["difficulties"][i];
         difficulties.InsertLast(EDifficulty(intDiff));
     }
+
+    startHeight = obj["startHeight"];
+    autoColoring = obj["autoColoring"];
+    forceColor = obj["forceColor"];
+    int intColor = obj["color"];
+    color = CGameEditorPluginMap::EMapElemColor(intColor);
     useSeed = obj["useSeed"];
     seed = obj["seed"];
     animate = obj["animate"];
-    airMode = obj["airMode"];
     airMode = obj["airMode"];
     allowCustomItems = obj["allowCustomItems"];
     allowCustomBlocks = obj["allowCustomBlocks"];

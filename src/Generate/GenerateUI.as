@@ -25,7 +25,6 @@ void RenderInterface() {
     UI::PushStyleColor(UI::Col::FrameBg , inputBg);
     UI::PushStyleColor(UI::Col::FrameBgHovered, color * vec4(1.7f, 1.7f, 1.7f, 0.2f));
     UI::PushStyleColor(UI::Col::FrameBgActive, color * vec4(1.7f, 1.7f, 1.7f, 0.4f));
-    UI::PushStyleColor(UI::Col::ChildBg, vec4(1, 1, 1, .007));
     UI::PushStyleColor(UI::Col::Tab, color * vec4(0.5f, 0.5f, 0.5f, 0.75f));
     UI::PushStyleColor(UI::Col::TabHovered, color * vec4(1.2f, 1.2f, 1.2f, 0.85f));
     UI::PushStyleColor(UI::Col::TabActive, color);
@@ -38,41 +37,47 @@ void RenderInterface() {
     UI::PushStyleColor(UI::Col::ButtonActive, buttonHover * vec4(1.7f, 1.7f, 1.7f, 0.7f));
     UI::PushStyleColor(UI::Col::TextSelectedBg, textSelect);
     UI::PushStyleColor(UI::Col::CheckMark, color * vec4(1.7f, 1.7f, 1.7f, 0.8f));
+    UI::PushStyleColor(UI::Col::SliderGrab, color * vec4(1.7f, 1.7f, 1.7f, 0.7f));
+    UI::PushStyleColor(UI::Col::SliderGrabActive, color * vec4(1.7f, 1.7f, 1.7f, 0.9f));
 
     UI::PushStyleColor(UI::Col::TitleBg, titleBg * vec4(.8, .8, .8, 1));
     UI::PushStyleColor(UI::Col::TitleBgActive, titleBg);
     UI::PushStyleColor(UI::Col::WindowBg, windowColor);
 
-    UI::PushStyleVar(UI::StyleVar::ChildRounding, 5.0);
+    UI::PushStyleVar(UI::StyleVar::GrabMinSize, 35);
+    UI::PushStyleVar(UI::StyleVar::GrabRounding, 20);
     UI::PushStyleVar(UI::StyleVar::CellPadding, vec2(12, 6));
     UI::PushStyleVar(UI::StyleVar::ScrollbarSize, 13.);
     UI::PushStyleVar(UI::StyleVar::ScrollbarRounding, 10.);
+    UI::PushStyleVar(UI::StyleVar::FrameRounding, 20);
 
     UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(20, 10));
-    UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(40, 20));
+    UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(30, 15));
     UI::PushStyleVar(UI::StyleVar::WindowRounding, 20.0);
     UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
     UI::SetNextWindowSize(550, 738);
+    UI::PushFont(Fonts::robotoRegular);
     if(UI::Begin("Macro Track Generator", windowOpen)) {
         RenderGenerateTrack();
     }
-
     UI::End();
-    UI::PopStyleVar(8);
-    UI::PopStyleColor(26);
+    UI::PopFont();
+    UI::PopStyleVar(10);
+    UI::PopStyleColor(27);
 }
 
 void RenderGenerateTrack() {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth() + 20);
     UI::BeginTabBar("gentabs");
     bool showGenerateButtons = true;
+    int tabIndex = 0;
     int flags = 0;
     if(selectedTabIndex == 0) {
         flags |= UI::TabItemFlags::SetSelected;
         selectedTabIndex = -1;
     }
     if(UI::BeginTabItem("Generation", flags)) {
-        RenderGenerationOptions();
+        tabIndex = 0;
         UI::EndTabItem();
     }
     flags = 0;
@@ -81,7 +86,7 @@ void RenderGenerateTrack() {
         selectedTabIndex = -1;
     }
     if(UI::BeginTabItem("Filter", flags)) {
-        RenderFilterOptions();
+        tabIndex = 1;
         UI::EndTabItem();
     }
     flags = 0;
@@ -90,17 +95,29 @@ void RenderGenerateTrack() {
         selectedTabIndex = -1;
     }
     if(UI::BeginTabItem("Create parts", flags)) {
+        tabIndex = 2;
         showGenerateButtons = false;
-        Create::RenderInterface();
         UI::EndTabItem();
     }
     UI::EndTabBar();
+    
+    UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(5, 5));
+    UI::BeginChild("tabcontent", vec2(UI::GetWindowContentRegionWidth(), UI::GetWindowSize().y - 320), true);
+    if(tabIndex == 0) RenderGenerationOptions();
+    if(tabIndex == 1)
+        RenderFilterOptions();
+    if(tabIndex == 2)
+        Create::RenderInterface();
+    UI::EndChild();
+    UI::PopStyleVar(1);
 
-    if(showGenerateButtons){ 
+    if(showGenerateButtons){
+        UI::Separator();
+        UI::NewLine();
         UI::Text("With this configuration, there are:");
-        UI::TextDisabled(Generate::startCount + " start parts");
-        UI::TextDisabled(Generate::partCount + " parts");
-        UI::TextDisabled(Generate::finishCount + " finish parts");
+        TMUI::TextDisabled(Generate::startCount + " start parts");
+        TMUI::TextDisabled(Generate::partCount + " parts");
+        TMUI::TextDisabled(Generate::finishCount + " finish parts");
 
         if(Generate::lastGenerateFailed) {
             UI::Text(Icons::ExclamationTriangle + " Track failed to generate!");
@@ -142,16 +159,46 @@ void RenderGenerationOptions() {
     if(GenOptions::useSeed) {
         GenOptions::seed = UI::InputText("Seed", GenOptions::seed);
     }
+    GenOptions::startHeight = UI::SliderFloat("Start height", GenOptions::startHeight, 0, 1);
+    int blocksHeight = int(Math::Round(float(editor.Challenge.Size.y) * GenOptions::startHeight));
+    TMUI::TextDisabled(tostring(blocksHeight) + " blocks high");
+    
     GenOptions::animate = TMUI::Checkbox("Animate generation process", GenOptions::animate);
-    UI::TextDisabled("The generation process is much slower when animating.");
-    GenOptions::airMode = TMUI::Checkbox("Use airmode to place blocks", GenOptions::airMode);
-    UI::TextDisabled("Track generation is more restricted with airmode turned off, because the wood supports can get in the way.");
+    TMUI::TextDisabled("The generation process is much slower when animating.");
+    GenOptions::airMode = !TMUI::Checkbox("Add wood supports", !GenOptions::airMode);
+    TMUI::TextDisabled("Track generation is more restricted with wood supports, because they can get in the way.");
     GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
+
+    GenOptions::forceColor = TMUI::Checkbox("Force color", GenOptions::forceColor);
+    if(GenOptions::forceColor) {
+        UI::SameLine();
+        GenOptions::autoColoring = TMUI::Checkbox("Spread colors over length of track", GenOptions::autoColoring);
+        if(!GenOptions::autoColoring) {
+            UI::NewLine();
+            for(uint i = 0; i < availableColors.Length; i++) {
+                auto color = availableColors[i];
+                if(i != 0) UI::SameLine();
+                UI::PushStyleColor(UI::Col::CheckMark, vec4(1, 1, 1, 1));
+                UI::PushStyleColor(UI::Col::FrameBg, colorVecs[i] * vec4(.8, .8, .8, .8));
+                UI::PushStyleColor(UI::Col::FrameBgHovered, colorVecs[i] * vec4(.8, .8, .8, .8));
+                UI::PushStyleColor(UI::Col::FrameBgActive, colorVecs[i] * vec4(1, 1, 1, .8));
+
+                UI::PushStyleColor(UI::Col::Border, GenOptions::color == color ? vec4(1, 1, 1, 1) : vec4(1, 1, 1, 0.2));
+                UI::PushStyleVar(UI::StyleVar::FrameBorderSize, 3);
+                UI::PushStyleVar(UI::StyleVar::FrameRounding, 20);
+                if(UI::Checkbox("##color" + i, GenOptions::color == color)) {
+                    GenOptions::color = color;
+                }
+                UI::PopStyleVar(2);
+                UI::PopStyleColor(5);
+            }
+        }
+    }
 }
 
 void RenderFilterOptions() {
     // -------- Include tags ------------
-    UI::TextDisabled("Parts must include one of the following tags (empty for all tags):");
+    TMUI::TextDisabled("Parts must include one of the following tags (empty for all tags):");
     string iTagsString = "";
     if(GenOptions::includeTags.Length == 0) 
         iTagsString = "No tags selected";
@@ -188,7 +235,7 @@ void RenderFilterOptions() {
     UI::PopID();
 
     // -------- Exclude tags ------------
-    UI::TextDisabled("Parts may not include any of the following tags:");
+    TMUI::TextDisabled("Parts may not include any of the following tags:");
     string eTagsString = "";
     if(GenOptions::excludeTags.Length == 0) 
         eTagsString = "No tags selected";
@@ -250,14 +297,14 @@ void RenderFilterOptions() {
     GenOptions::respawnable = TMUI::Checkbox("Parts must be respawnable", GenOptions::respawnable);
     GenOptions::considerSpeed = TMUI::Checkbox("Consider speed when connecting parts", GenOptions::considerSpeed);
     if(GenOptions::considerSpeed) {
-        UI::TextDisabled("Maximum difference in speed between parts:");
+        TMUI::TextDisabled("Maximum difference in speed between parts:");
         GenOptions::maxSpeedVariation = Math::Clamp(UI::InputInt("Max speed difference", GenOptions::maxSpeedVariation, 10), 0, 990);
     }
     GenOptions::maxSpeed = Math::Clamp(UI::InputInt("Maximum speed", GenOptions::maxSpeed, 10), GenOptions::minSpeed + 10, 1000);
     GenOptions::minSpeed = Math::Clamp(UI::InputInt("Minimum speed", GenOptions::minSpeed, 10), 0, GenOptions::maxSpeed - 10);
 
     GenOptions::author = UI::InputText("Author", GenOptions::author);
-    UI::TextDisabled("Leave author empty to allow any author.");
+    TMUI::TextDisabled("Leave author empty to allow any author.");
 
     if(UI::BeginCombo("Allow reuse of parts?", tostring(GenOptions::reuse))) {
         for(uint i = 0; i < availableReuses.Length; i++) 
@@ -266,7 +313,7 @@ void RenderFilterOptions() {
         UI::EndCombo();
     }
     if(GenOptions::reuse == EReuse::PreferNoReuse) {
-        UI::TextDisabled('"Prefer no reuse" reduces randomness of tracks.');
+        TMUI::TextDisabled('"Prefer no reuse" reduces randomness of tracks.');
     } else { 
         UI::Text("");
     }

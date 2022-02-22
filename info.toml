@@ -1,7 +1,7 @@
 [meta]
-name = "MacroTrackGenerator"
+name = "Macro Track Generator"
 author = "RuteNL"
-category = "Editor"
+category = "Map Editor"
 
 version = "0.1.0"
 

@@ -19,5 +19,9 @@
     "maxSpeed": 1000,
     "desiredMapLength": 60,
     "author": "",
-    "reuse": 1
+    "reuse": 1,
+    "forceColor": true,
+    "autoColoring": false,
+    "color": 5,
+    "startHeight": 0.1
 }

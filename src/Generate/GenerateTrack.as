@@ -53,7 +53,7 @@ DirectedPosition@ FindStartPosition(CGameCtnMacroBlockInfo@ macroblock) {
     auto macroblockSize = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
     auto placeDir = CGameEditorPluginMap::ECardinalDirections::South;
     auto startX = mapSize.x / 2 - macroblockSize.x / 2;
-    auto startY = mapSize.y / 2 - macroblockSize.y / 2;
+    auto startY = int(Math::Round(mapSize.y * GenOptions::startHeight));
     auto startZ = mapSize.z / 2 - macroblockSize.z / 2;
     auto spiral = SpiralOut();
 
@@ -259,6 +259,18 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
         if(!canPlace) 
             continue;
         bool placed;
+        if(GenOptions::forceColor) {
+            editor.PluginMapType.ForceMacroblockColor = true;
+            auto color = GenOptions::color;
+            if(GenOptions::autoColoring) {
+                auto percentage = Math::Clamp(float(generatedMapDuration) / float(GenOptions::desiredMapLength), 0, .999999);
+                print("percentage: " + percentage);
+                color = availableColors[1 + int((availableColors.Length - 1) * percentage)];
+            }
+            editor.PluginMapType.NextMapElemColor = color;
+        } else {
+            editor.PluginMapType.ForceMacroblockColor = false;
+        }
         if(GenOptions::airMode) {
             placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
         } else {

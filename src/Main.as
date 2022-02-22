@@ -2,9 +2,6 @@
 // -------------- priority high: ----------------
 
 // -------------- priority low: ---------------
-// * check mark in scripts menu for turning off plugin
-// * setting for turning off in-editor ui elements
-// * (random) macroblock kleuren
 
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
 // * replace warns with warning notification
@@ -50,3 +47,9 @@ void Update(float dt) {
 
 bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key); }
 bool OnMouseButton(bool down, int button, int x, int y){ return Create::OnMouseButton(down, button, x, y); }
+
+void RenderMenu() {
+	if (UI::MenuItem("\\$0A5" + Icons::Random + "\\$z Macro Track Generator", "", Generate::windowOpen)) {
+		Generate::windowOpen = !Generate::windowOpen;
+	}
+}

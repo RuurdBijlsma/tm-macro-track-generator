@@ -39,41 +39,44 @@ void RenderNativeUI() {
     RenderHintText();
     hintText = "";
 
-    for(uint i = 0; i < Button::list.Length; i++){
-        Button::list[i].visible = false;
-        Button::list[i].isHovered = false;
-    }
-    auto placeMode = editor.PluginMapType.PlaceMode;
+    if(nativeButtons) {
+        for(uint i = 0; i < Button::list.Length; i++){
+            Button::list[i].visible = false;
+            Button::list[i].isHovered = false;
+        }
+        auto placeMode = editor.PluginMapType.PlaceMode;
 
-    if(!editor.PluginMapType.HideInventory) {
-        if(placeMode == CGameEditorPluginMap::EPlaceMode::CopyPaste) {
-            if(state == EState::Idle) {
-                Button::create.visible = true;
-            } else {
-                Button::cancel.visible = true;
+        if(!editor.PluginMapType.HideInventory) {
+            if(placeMode == CGameEditorPluginMap::EPlaceMode::CopyPaste) {
+                if(state == EState::Idle) {
+                    Button::create.visible = true;
+                } else {
+                    Button::cancel.visible = true;
+                }
             }
+            if(placeMode == CGameEditorPluginMap::EPlaceMode::Block 
+            || placeMode == CGameEditorPluginMap::EPlaceMode::Macroblock 
+            || placeMode == CGameEditorPluginMap::EPlaceMode::FreeBlock 
+            || placeMode == CGameEditorPluginMap::EPlaceMode::GhostBlock 
+            || placeMode == CGameEditorPluginMap::EPlaceMode::FreeMacroblock 
+            || placeMode == CGameEditorPluginMap::EPlaceMode::Item) {
+                RenderMTGBackdrop();
+                if(editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::Macroblock || editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::FreeMacroblock) {
+                    Button::mtgAirmode.visible = true;
+                }
+                Button::mtgClear.visible = true;
+                Button::mtgGenerate.visible = true;
+                if(state == EState::Idle) {
+                    Button::mtgCreate.visible = true;
+                    Button::mtgEdit.visible = true;
+                } else {
+                    Button::mtgCancel.visible = true;
+                }
+            }
+            RenderButtons();
         }
-        if(placeMode == CGameEditorPluginMap::EPlaceMode::Block 
-        || placeMode == CGameEditorPluginMap::EPlaceMode::Macroblock 
-        || placeMode == CGameEditorPluginMap::EPlaceMode::FreeBlock 
-        || placeMode == CGameEditorPluginMap::EPlaceMode::GhostBlock 
-        || placeMode == CGameEditorPluginMap::EPlaceMode::FreeMacroblock 
-        || placeMode == CGameEditorPluginMap::EPlaceMode::Item) {
-            RenderMTGBackdrop();
-            if(editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::Macroblock || editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::FreeMacroblock) {
-                Button::mtgAirmode.visible = true;
-            }
-            Button::mtgClear.visible = true;
-            Button::mtgGenerate.visible = true;
-            if(state == EState::Idle) {
-                Button::mtgCreate.visible = true;
-                Button::mtgEdit.visible = true;
-            } else {
-                Button::mtgCancel.visible = true;
-            }
-        }
-        RenderButtons();
     }
+
     nvg::Restore();
 }
 
@@ -180,7 +183,17 @@ void RenderIdleState() {
     UI::Text("Randomly generated tracks consist of 'MacroParts'. These are macroblocks with extra embedded information to help the generator connect parts together.");
     UI::TextDisabled("Your available MacroParts can be found in the macroblocks tab below (F4), in the folder '" + macroPartFolder + "'.");
     UI::NewLine();
-    UI::Text("Click the " + Icons::FilePowerpointO + " button in the copy paste menu (C) to create a MacroPart.");
+    if(nativeButtons) {
+        UI::Text("Click the " + Icons::FilePowerpointO + " button in the copy paste menu (C) to create a MacroPart.");
+    } else {
+        if(TMUI::Button("Create part")) {
+            CreateNewMacroPart();
+        }
+        UI::SameLine();
+        if(TMUI::Button("Edit part")) {
+            EditExistingMacroPart();
+        }
+    }
     UI::PopTextWrapPos();
 }
 
