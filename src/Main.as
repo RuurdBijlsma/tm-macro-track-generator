@@ -13,6 +13,12 @@
 //      so dont make large section with just ghost/free blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
+// * add option to clear map before generating or not
+// * reset color and forcemacroblock to what it was before generating track
+// * auto check if macroblock is connected to ground after selecting
+
+// * Scenery generator? 
+// * do deleted parts array thing finish pls
 
 // --------------- not possible: ------------------
 // * find better way of deleting macroblock

@@ -13,6 +13,7 @@ dictionary@ filterReasons = null;
 bool lastGenerateFailed = false;
 bool canceled = false;
 int generatedMapDuration = 0;
+string[]@ deletedParts = {};
 
 void Initialize() {
     @allParts = GetMacroParts();
@@ -38,6 +39,7 @@ MacroPart@[] GetMacroParts() {
                     auto macroblock = cast<CGameCtnMacroBlockInfo@>(articleNode.Article.LoadedNod);
                     if(macroblock is null) continue;
                     if(macroblock.IdName.EndsWith("temp_MTG.Macroblock.Gbx")) continue;
+                    if(deletedParts.Find(macroblock.IdName) != -1) continue;
                     auto macroPart = MacroPart::FromMacroblock(macroblock);
                     if(macroPart is null) continue;
                     macroParts.InsertLast(macroPart);
@@ -47,40 +49,6 @@ MacroPart@[] GetMacroParts() {
     }
 
     return macroParts;
-}
-
-DirectedPosition@ FindStartPosition(CGameCtnMacroBlockInfo@ macroblock) {
-    auto mapSize = editor.Challenge.Size;
-    auto macroblockSize = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
-    auto placeDir = CGameEditorPluginMap::ECardinalDirections::South;
-    auto startX = mapSize.x / 2 - macroblockSize.x / 2;
-    auto startY = int(Math::Round(mapSize.y * GenOptions::startHeight));
-    auto startZ = mapSize.z / 2 - macroblockSize.z / 2;
-    auto spiral = SpiralOut();
-
-    while(true) {
-        auto x = startX + spiral.x;
-        auto z = startZ + spiral.y;
-        for(uint y = startY; y < mapSize.y; y++) {
-            auto placePoint = DirectedPosition(x, y, z, placeDir);
-            auto canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, placePoint.position, placePoint.direction);
-            if(canPlace) 
-                return placePoint;
-        }
-        for(uint y = startY - 1; y > 0; y--) {
-            auto placePoint = DirectedPosition(x, y, z, placeDir);
-            auto canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, placePoint.position, placePoint.direction);
-            if(canPlace) 
-                return placePoint;
-        }
-        spiral.GoNext();
-        if(spiral.layer > int(mapSize.x)) {
-            warn("Could not find starting position for track");
-            break;
-        }
-    }
-
-    return null;
 }
 
 MacroPart@[]@ GlobalFilterParts() {
@@ -195,10 +163,23 @@ void GenerateTrack() {
     print("Found " + filteredParts.Length + " available parts after global filter is applied.");
 
     // clear map for testing
-    MTG::ClearMap();
+    if(GenOptions::clearMap)
+        MTG::ClearMap();
 
     lastYield = Time::Now;
     bool success = PlacePart();
+    
+    // bool success = true;
+    // auto possibleParts = FilterParts(0, EPartType::Start);
+    // auto starts = StartPositionGenerator(possibleParts[0]);
+    // while(true) {
+    //     auto pos = starts.Next();
+    //     print(pos.ToPrintString());
+    //     if(pos is null)
+    //         break;
+    // }
+
+
     if(canceled) {
         print("was canceled");
         canceled = false;
@@ -247,6 +228,37 @@ MacroPart@[]@ FilterParts(int speed, const EPartType &in type) {
     return filtered;
 }
 
+bool Place(MacroPart@ part, DirectedPosition@ placePos) {
+    bool placed;
+    if(GenOptions::forceColor) {
+        editor.PluginMapType.ForceMacroblockColor = true;
+        auto color = GenOptions::color;
+        if(GenOptions::autoColoring) {
+            auto percentage = Math::Clamp(float(generatedMapDuration) / float(GenOptions::desiredMapLength), 0, .999999);
+            color = availableColors[1 + int((availableColors.Length - 1) * percentage)];
+        }
+        editor.PluginMapType.NextMapElemColor = color;
+    } else {
+        editor.PluginMapType.ForceMacroblockColor = false;
+    }
+    if(GenOptions::airMode) {
+        placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
+    } else {
+        placed = editor.PluginMapType.PlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
+    }
+    if(placed) {
+        usedParts[part.ID] = int(usedParts[part.ID]) + 1;
+        generatedMapDuration += part.duration;
+    }
+    return placed;
+}
+
+void UnPlace(MacroPart@ part, DirectedPosition@ placePos) {
+    editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
+    generatedMapDuration -= part.duration;
+    usedParts[part.ID] = int(usedParts[part.ID]) - 1;
+}
+
 bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
     if(canceled) return false;
     auto now = Time::Now;
@@ -261,61 +273,47 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
     } else {
         type = generatedMapDuration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
     }
-    MacroPart@[]@ possibleParts = FilterParts(incomingSpeed, type);
+    auto possibleParts = FilterParts(incomingSpeed, type);
     bool finished = false;
 
+    DirectedPosition@ placePos = null;
+    StartPositionGenerator@ starts = null;
     for(uint i = 0; i < possibleParts.Length; i++) {
         auto part = possibleParts[i];
-        DirectedPosition@ placePos = null;
         if(type == EPartType::Start) {
-            @placePos = FindStartPosition(part.macroblock);
-            if(placePos is null) 
-                continue;
+            @starts = StartPositionGenerator(part);
         } else {
             auto northArrow = MTG::GetNorthArrowFromRelativePosition(connectPoint, part.entrance);
             @placePos = MTG::NorthArrowToCursor(part.macroblock, northArrow);
         }
-        bool canPlace = editor.PluginMapType.CanPlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
-        // print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + generatedMapDuration);
-        if(!canPlace) 
-            continue;
-        bool placed;
-        if(GenOptions::forceColor) {
-            editor.PluginMapType.ForceMacroblockColor = true;
-            auto color = GenOptions::color;
-            if(GenOptions::autoColoring) {
-                auto percentage = Math::Clamp(float(generatedMapDuration) / float(GenOptions::desiredMapLength), 0, .999999);
-                color = availableColors[1 + int((availableColors.Length - 1) * percentage)];
+        while(true) {
+            if(type == EPartType::Start) {
+                @placePos = starts.Next();
+                print("Test start pos: " + placePos.ToPrintString());
+                if(placePos is null) break;
             }
-            editor.PluginMapType.NextMapElemColor = color;
-        } else {
-            editor.PluginMapType.ForceMacroblockColor = false;
+            bool canPlace = editor.PluginMapType.CanPlaceMacroblock_NoDestruction(part.macroblock, placePos.position, placePos.direction);
+            // print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + generatedMapDuration);
+            if(!canPlace) 
+                break;
+            bool placed = Place(part, placePos);
+            if(!placed)
+                break;
+            if(type == EPartType::Finish)
+                return true;
+            auto partEntrancePos = MTG::ToAbsolutePosition(part.macroblock, placePos, part.exit);
+            partEntrancePos.MoveForward();
+            finished = PlacePart(partEntrancePos, part.exitSpeed);
+            if(!finished && !canceled) {
+                UnPlace(part, placePos);
+                // print("Removing!");
+                if(GenOptions::animate)
+                    yield();
+            }
+            if(type != EPartType::Start || finished || canceled)
+                break;
         }
-        if(GenOptions::airMode) {
-            placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
-        } else {
-            placed = editor.PluginMapType.PlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
-        }
-        if(!placed)
-            continue;
-        if(type == EPartType::Finish) {
-            return true;
-        }
-        auto partEntrancePos = MTG::ToAbsolutePosition(part.macroblock, placePos, part.exit);
-        partEntrancePos.MoveForward();
-        usedParts[part.ID] = int(usedParts[part.ID]) + 1;
-        generatedMapDuration += part.duration;
-        finished = PlacePart(partEntrancePos, part.exitSpeed);
-        if(finished) {
-            break;
-        } else if(!canceled) {
-            // print("Removing!");
-            if(GenOptions::animate)
-                yield();
-            generatedMapDuration -= part.duration;
-            usedParts[part.ID] = int(usedParts[part.ID]) - 1;
-            editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
-        }
+        if(finished) break;
     }
     
     return finished;

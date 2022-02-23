@@ -180,6 +180,7 @@ void RenderGenerationOptions() {
     TMUI::TextDisabled("Track generation is more restricted with wood supports, because they can get in the way.");
     GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
 
+    GenOptions::clearMap = TMUI::Checkbox("Clear map before generating", GenOptions::clearMap);
     GenOptions::forceColor = TMUI::Checkbox("Force color", GenOptions::forceColor);
     if(GenOptions::forceColor) {
         UI::SameLine();

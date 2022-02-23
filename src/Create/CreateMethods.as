@@ -396,17 +396,27 @@ void SelectNewMacroblock() {
     }
 }
 
+void DeleteMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
+    auto relPath = macroblock.IdName;
+    auto oldPath = MTG::GetBlocksFolder() + relPath;
+    if(IO::FileExists(oldPath)) {
+        print("Deleting " + oldPath);
+        IO::Delete(oldPath);
+    }
+    if(Generate::deletedParts.Find(relPath) == -1) {
+        Generate::deletedParts.InsertLast(relPath);
+    }
+}
+
 void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
     // todo: if mb name is already in format: macropartfolder \\ newName(n).Macroblock.Gbx, then dont delete
     if(macroblock is null) return;
-    string oldRelPath = macroblock.IdName;
-    print("oldPath: " + oldRelPath);
     string newPath = "";
     int i = 0;
     while(true) {
         string overwriteProtection = i == 0 ? "" : "(" + i + ")";
         newPath = "Stadium\\" + macroPartFolder + "\\" + newName + overwriteProtection + ".Macroblock.Gbx";
-        if(newPath == oldRelPath) // old path was already in proper format, no need to rename
+        if(newPath == macroblock.IdName) // old path was already in proper format, no need to rename
             return;
         if(!IO::FileExists(MTG::GetBlocksFolder() + newPath))
             break;
@@ -416,11 +426,7 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
     macroblock.IdName = newPath;
     print("newPath: " + macroblock.IdName);
     editor.PluginMapType.SaveMacroblock(macroblock);
-    auto oldPath = MTG::GetBlocksFolder() + oldRelPath;
-    if(IO::FileExists(oldPath)) {
-        print("Deleting " + oldPath);
-        IO::Delete(oldPath);
-    }
+    DeleteMacroblock(macroblock);
 }
 
 void SaveMacroPart(MacroPart@ part) {

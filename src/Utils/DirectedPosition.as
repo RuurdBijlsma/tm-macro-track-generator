@@ -34,6 +34,13 @@ class DirectedPosition{
 };
 
 namespace DirectedPosition {
+CGameEditorPluginMap::ECardinalDirections[]@ allDirections = {
+    CGameEditorPluginMap::ECardinalDirections::North, 
+    CGameEditorPluginMap::ECardinalDirections::East,
+    CGameEditorPluginMap::ECardinalDirections::South, 
+    CGameEditorPluginMap::ECardinalDirections::West
+};
+
 DirectedPosition@ Add(DirectedPosition@ pos1, DirectedPosition@ pos2) {
     if(pos1 is null || pos2 is null) return null;
     auto newDirection = CGameEditorPluginMap::ECardinalDirections((pos1.direction + pos2.direction) % 4);

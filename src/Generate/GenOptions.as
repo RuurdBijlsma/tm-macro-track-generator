@@ -30,6 +30,14 @@ string[]@ excludeTags = {};
 // - difficulty range
 EDifficulty[]@ difficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
 
+bool _clearMap = false;
+bool get_clearMap(){return _clearMap;}
+void set_clearMap(bool v) {
+    if(_clearMap != v) {
+        OnChange();
+        _clearMap = v;
+    }
+}
 float _startHeight = 0.5;
 float get_startHeight(){return _startHeight;}
 void set_startHeight(float v) {
@@ -212,6 +220,7 @@ Json::Value ToJson() {
     obj["difficulties"] = Json::Array();
     for(uint i = 0; i < difficulties.Length; i++)
         obj["difficulties"].Add(difficulties[i]);
+    obj["clearMap"] = clearMap;
     obj["startHeight"] = startHeight;
     obj["forceColor"] = forceColor;
     obj["autoColoring"] = autoColoring;
@@ -250,6 +259,7 @@ void FromJson(Json::Value obj) {
         difficulties.InsertLast(EDifficulty(intDiff));
     }
 
+    clearMap = obj["clearMap"];
     startHeight = obj["startHeight"];
     autoColoring = obj["autoColoring"];
     forceColor = obj["forceColor"];

@@ -22,6 +22,7 @@
     "reuse": 1,
     "forceColor": true,
     "autoColoring": false,
+    "clearMap": true,
     "color": 5,
     "startHeight": 0.1
 }
