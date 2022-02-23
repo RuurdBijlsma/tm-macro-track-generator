@@ -82,7 +82,7 @@ void RenderNativeUI() {
 
 void RenderHintText() {
     if(hintText == "") return;
-    nvg::FontFace(Fonts::montserratRegular);
+    nvg::FontFace(Fonts::droidSansBold);
     nvg::TextAlign(nvg::Align::Center | nvg::Align::Middle);
     nvg::FontSize(40);
     nvg::FillColor(shadowColor);
@@ -92,8 +92,8 @@ void RenderHintText() {
 }
 
 void RenderButtons() {
-    nvg::FontFace(Fonts::droidSansBold);
     for(uint i = 0; i < Button::list.Length; i++) {
+        nvg::FontFace(Fonts::droidSansBold);
         nvg::TextAlign(nvg::Align::Center | nvg::Align::Middle);
         auto button = Button::list[i];
         if(!button.visible) continue;
@@ -110,7 +110,7 @@ void RenderButtons() {
         if(button.isHovered && button.hintText != "") {
             nvg::FontSize(25);
             nvg::TextAlign(nvg::Align::Left | nvg::Align::Middle);
-            nvg::FontFace(Fonts::droidSansRegular);
+            nvg::FontFace(Fonts::montserratRegular);
             nvg::FillColor(lightTextColor);
             nvg::Text(1661, 1403, button.hintText);
         }

@@ -22,7 +22,7 @@ enum EDifficulty {
 };
 
 string[]@ availableTags = {"FullSpeed", "Tech", "Mixed", "Nascar", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Sausage", "RPG", "Race"};
-EConnector[]@ availableConnectors = {EConnector::Platform, EConnector::RoadDirt, EConnector::RoadIce, EConnector::RoadBump, EConnector::DecoWall};
+EConnector[]@ availableConnectors = {EConnector::Platform, EConnector::RoadTech, EConnector::RoadDirt, EConnector::RoadIce, EConnector::RoadBump, EConnector::DecoWall};
 EPartType[]@ availableTypes = {EPartType::Start, EPartType::Finish, EPartType::Part, EPartType::Multilap};
 EDifficulty[]@ availableDifficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
 

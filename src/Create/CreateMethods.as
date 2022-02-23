@@ -396,12 +396,11 @@ void SelectNewMacroblock() {
     }
 }
 
-void DeleteMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
-    auto relPath = macroblock.IdName;
-    auto oldPath = MTG::GetBlocksFolder() + relPath;
-    if(IO::FileExists(oldPath)) {
-        print("Deleting " + oldPath);
-        IO::Delete(oldPath);
+void DeleteMacroblock(const string &in relPath) {
+    auto path = MTG::GetBlocksFolder() + relPath;
+    if(IO::FileExists(path)) {
+        print("Deleting " + path);
+        IO::Delete(path);
     }
     if(Generate::deletedParts.Find(relPath) == -1) {
         Generate::deletedParts.InsertLast(relPath);
@@ -423,10 +422,16 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
         i++;
         print("MacroBlock already exists: " + newPath + ", adding (" + i + ") to end of filename");
     }
+    auto oldPath = macroblock.IdName;
     macroblock.IdName = newPath;
     print("newPath: " + macroblock.IdName);
+    
+    auto delListIndex = Generate::deletedParts.Find(macroblock.IdName);
+    // if item is in list of deleted parts, remove it from the list
+    if(delListIndex != -1)
+        Generate::deletedParts.RemoveAt(delListIndex);
     editor.PluginMapType.SaveMacroblock(macroblock);
-    DeleteMacroblock(macroblock);
+    DeleteMacroblock(oldPath);
 }
 
 void SaveMacroPart(MacroPart@ part) {

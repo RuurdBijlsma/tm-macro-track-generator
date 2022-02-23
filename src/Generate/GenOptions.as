@@ -27,8 +27,10 @@ namespace GenOptions {
 // - tag
 string[]@ includeTags = {};
 string[]@ excludeTags = {};
+string[]@ disabledParts = {};
 // - difficulty range
 EDifficulty[]@ difficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
+
 
 bool _clearMap = false;
 bool get_clearMap(){return _clearMap;}
@@ -220,6 +222,9 @@ Json::Value ToJson() {
     obj["difficulties"] = Json::Array();
     for(uint i = 0; i < difficulties.Length; i++)
         obj["difficulties"].Add(difficulties[i]);
+    obj["disabledParts"] = Json::Array();
+    for(uint i = 0; i < disabledParts.Length; i++)
+        obj["disabledParts"].Add(disabledParts[i]);
     obj["clearMap"] = clearMap;
     obj["startHeight"] = startHeight;
     obj["forceColor"] = forceColor;
@@ -258,6 +263,9 @@ void FromJson(Json::Value obj) {
         int intDiff = obj["difficulties"][i];
         difficulties.InsertLast(EDifficulty(intDiff));
     }
+    disabledParts = {};
+    for(uint i = 0; i < obj["disabledParts"].Length; i++) 
+        disabledParts.InsertLast(obj["disabledParts"][i]);
 
     clearMap = obj["clearMap"];
     startHeight = obj["startHeight"];

@@ -1,6 +1,7 @@
 {
     "includeTags": [],
     "excludeTags": [],
+    "disabledParts": [],
     "difficulties": [
         0,
         1,
@@ -14,7 +15,7 @@
     "allowCustomItems": true,
     "allowCustomBlocks": true,
     "considerSpeed": true,
-    "maxSpeedVariation": 100,
+    "maxSpeedVariation": 50,
     "minSpeed": 0,
     "maxSpeed": 1000,
     "desiredMapLength": 60,

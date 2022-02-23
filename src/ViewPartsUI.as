@@ -4,10 +4,15 @@ MacroPart@ selectedPart = null;
 
 void RenderInterface() {
     if(selectedPart is null) {
-        if(UI::BeginTable("parts", 3)) {
-            UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch, 1);
-            UI::TableSetupColumn("Matches filter", UI::TableColumnFlags::WidthFixed, 90);
-            UI::TableSetupColumn("Actions", UI::TableColumnFlags::WidthFixed, 130);
+        if(TMUI::Button("Refresh")) {
+            Generate::Initialize();
+        }
+        if(UI::BeginTable("parts", (Generate::usedParts is null) ? 3 : 4)) {
+            if(Generate::usedParts !is null)
+                UI::TableSetupColumn("##useCount", UI::TableColumnFlags::WidthFixed, 5);
+            UI::TableSetupColumn("##name", UI::TableColumnFlags::WidthStretch, 1);
+            UI::TableSetupColumn("##filtered", UI::TableColumnFlags::WidthFixed, 10);
+            UI::TableSetupColumn("##actions", UI::TableColumnFlags::WidthFixed, 160);
             // UI::TableHeadersRow();
             for(uint i = 0; i < Generate::allParts.Length; i++) {
                 UI::PushID("partRow" + i);
@@ -25,10 +30,10 @@ void RenderInterface() {
 
 void RenderPart(MacroPart@ part) {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
-    if(UI::Button("Back to list")) {
+    if(TMUI::Button("Back to list")) {
         @selectedPart = null;
     }
-    TMUI::TextDisabled(part.macroblock.IdName);
+    TMUI::TextDisabled(part.ID);
 
     PartEditor(part);
 
@@ -40,6 +45,7 @@ void RenderPart(MacroPart@ part) {
         
     if(TMUI::Button("Save changes")) {
         Create::SaveMacroPart(part);
+        @selectedPart = null;
     }
     UI::SameLine();
     if(TMUI::Button("Edit entrance / exit block")) {
@@ -49,10 +55,22 @@ void RenderPart(MacroPart@ part) {
 }
 
 void RenderPartRow(MacroPart@ part) {
-    int useCount = 0;
-    if(Generate::usedParts !is null)
-        useCount = int(Generate::usedParts[part.ID]);
     string reason = string(Generate::filterReasons[part.ID]);
+
+    if(Generate::usedParts !is null) { 
+        UI::PushStyleVar(UI::StyleVar::ItemInnerSpacing, vec2(0, 0));
+        UI::PushStyleVar(UI::StyleVar::ItemSpacing, vec2(0, 0));
+        UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(0, 0));
+        int useCount = int(Generate::usedParts[part.ID]);
+        UI::TableNextColumn();
+        TMUI::TextDisabled(tostring(useCount));
+        UI::PopStyleVar(3);
+        if(UI::IsItemHovered()) {
+            UI::BeginTooltip();
+            UI::Text("Use count in previously generated track");
+            UI::EndTooltip();
+        }
+    }
 
     UI::TableNextColumn();
     if(part.type == EPartType::Finish) {
@@ -67,6 +85,7 @@ void RenderPartRow(MacroPart@ part) {
     TMUI::TextDisabled(part.author);
 
     UI::TableNextColumn();
+    UI::Dummy(vec2(1, 0));
     if(reason == "") {
         UI::Text("\\$3f3" + Icons::Check);
     } else {
@@ -79,13 +98,54 @@ void RenderPartRow(MacroPart@ part) {
     }
     
     UI::TableNextColumn();
-    if(TMUI::Button(Icons::Info)) {
-        @selectedPart = part;
+    UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(4, 5));
+    auto listIndex = GenOptions::disabledParts.Find(part.ID);
+    bool isInList = listIndex != -1;
+    auto checkValue = UI::Checkbox("##check", !isInList);
+    if(checkValue == isInList) {
+        print("Toggle");
+        if(isInList) {
+            GenOptions::disabledParts.RemoveAt(listIndex);
+        } else {
+            GenOptions::disabledParts.InsertLast(part.ID);
+        }
+        GenOptions::OnChange();
+    }
+    if(UI::IsItemHovered()) {
+        UI::BeginTooltip();
+        UI::Text(isInList ? "Enable MacroPart" : "Disable MacroPart");
+        UI::EndTooltip();
     }
     UI::SameLine();
-    if(TMUI::RedButton(Icons::Trash)) {
-        print("trash");
+    if(UI::Button(Icons::Eyedropper)) {
+        editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
+        @editor.PluginMapType.CursorMacroblockModel = part.macroblock;
     }
+    if(UI::IsItemHovered()) {
+        UI::BeginTooltip();
+        UI::Text("Select macroblock");
+        UI::EndTooltip();
+    }
+    UI::SameLine();
+    if(UI::Button(Icons::Pencil)) {
+        @selectedPart = part;
+    }
+    if(UI::IsItemHovered()) {
+        UI::BeginTooltip();
+        UI::Text("Edit MacroPart");
+        UI::EndTooltip();
+    }
+    UI::SameLine();
+    if(UI::RedButton(Icons::Trash)) {
+        Create::DeleteMacroblock(part.ID);
+        Generate::Initialize();
+    }
+    if(UI::IsItemHovered()) {
+        UI::BeginTooltip();
+        UI::Text("Delete MacroPart");
+        UI::EndTooltip();
+    }
+    UI::PopStyleVar(1);
 }
 
 }

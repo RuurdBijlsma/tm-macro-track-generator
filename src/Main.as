@@ -1,26 +1,22 @@
 //todo
 // -------------- priority high: ----------------
-// * When deleting a part either through rename or through delete button, mark it deleted for GetAllParts()
 // * Finish up parts list and part edit thing
+// * in part details page -> 2 buttons -> save changes & edit blocks which puts the macroblock on the cursor to be placed in airmode so the user can:
+//      place it -> change it -> user select it -> choose entrance / exit -> save changes to file and go back to part details page
 
 // -------------- priority low: ---------------
 
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
-// * replace warns with warning notification
-// * show user list of all macroparts -> let user disable individual parts
 
 // * Give warning when creating that non-block mode placed items can end up intersecting 
 //      so dont make large section with just ghost/free blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
-// * add option to clear map before generating or not
-// * reset color and forcemacroblock to what it was before generating track
 // * auto check if macroblock is connected to ground after selecting
-
 // * Scenery generator? 
-// * do deleted parts array thing finish pls
 
 // --------------- not possible: ------------------
+// * get icon of macroblock
 // * find better way of deleting macroblock
 
 CGameCtnEditorCommon@ editor = null;
