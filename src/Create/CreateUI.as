@@ -28,7 +28,8 @@ void RenderNativeUI() {
         hintText += "Press 'V' to place a macroblock in the map using air block mode.";
     
     
-    if(editor is null) return;
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     float scaleX = float(Draw::GetWidth()) / 2560;
     float scaleY = float(Draw::GetHeight()) / 1440;
     auto mousePos = UI::GetMousePos();
@@ -198,6 +199,8 @@ void RenderIdleState() {
 }
 
 void RenderSelectBlockState() {  
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     UI::Text(hintText);
     UI::TextDisabled("Only use floating blocks or items.");
     UI::TextDisabled("Don't select ground blocks.");

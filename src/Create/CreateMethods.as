@@ -29,6 +29,9 @@ CGameCtnBlock@ blockInfo = null;
 string[]@ detectedTags = null;
 
 void Update() {
+    auto app = GetApp();
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     if(state == EState::SelectBlocks){
         // wait for macroblock save
         auto currentFrame = app.BasicDialogs.Dialogs.CurrentFrame;
@@ -75,7 +78,8 @@ void Update() {
 }
 
 bool OnKeyPress(bool down, VirtualKey key) {
-    if(editor is null) return false;
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return false;
 
     if(state == EState::SelectPlacement && key == VirtualKey::V && down) {
         return PlaceUserMacroblockAtCursor();
@@ -99,7 +103,8 @@ bool OnKeyPress(bool down, VirtualKey key) {
 }
 
 bool OnMouseButton(bool down, int button, int x, int y) {
-    if(editor is null) return false;
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return false;
 
     if(button == 0 && down)
         for(uint i = 0; i < Button::list.Length; i++) {
@@ -198,6 +203,8 @@ void CleanUp() {
 }
 
 void PlaceBackMap() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     if(copiedMap) {
         // get back original map & remove placed macroblock
         editor.PluginMapType.Undo();
@@ -209,6 +216,8 @@ void PlaceBackMap() {
 }
 
 void CreateNewMacroPart() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     Generate::selectedTabIndex = 3;
     // Reset variables
     @partDetails = MacroPart();
@@ -226,6 +235,8 @@ void CreateNewMacroPart() {
 }
 
 void EditExistingMacroPart() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     Generate::selectedTabIndex = 3;
     // Reset variables
     @partDetails = null;
@@ -239,6 +250,8 @@ void EditExistingMacroPart() {
 }
 
 bool BlockFitsInDirection(CGameCtnBlock@ block,  CGameCtnBlockInfo@ otherBlock, CGameEditorPluginMap::ECardinalDirections direction) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return false;
     if(block is null || otherBlock is null) return false;
     editor.PluginMapType.GetConnectResults(block, otherBlock);
     auto results = editor.PluginMapType.ConnectResults;
@@ -253,6 +266,8 @@ bool BlockFitsInDirection(CGameCtnBlock@ block,  CGameCtnBlockInfo@ otherBlock, 
 }
 
 EConnector GetConnector(CGameCtnBlock@ block, CGameEditorPluginMap::ECardinalDirections cursorDirection, bool isExit = false) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return EConnector::Platform;
     if(block is null) return EConnector::Platform;
     auto blockInfo = block.BlockInfo;
     if(blockInfo is null || !blockInfo.PageName.Contains('/')) return EConnector::Platform;
@@ -330,6 +345,8 @@ string[]@ GetTags(CGameCtnBlockInfo@ blockInfo) {
 }
 
 bool PlaceUserMacroblockAtCursor() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return false;
     if(isEditing) {
         if(editor.CurrentMacroBlockInfo is null) 
             return false;
@@ -353,6 +370,8 @@ bool PlaceUserMacroblockAtCursor() {
 }
 
 void PlaceUserMacroblock(DirectedPosition@ dirPos) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     copiedMap = MTG::CutMap();
     if(dirPos is null) {
         CleanUp();
@@ -367,6 +386,9 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
 }
 
 void SelectNewMacroblock() {
+    auto app = GetApp();
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     auto maxWait = 500;
     mbPath = macroPartFolder + "\\temp_MTG";
     app.BasicDialogs.String = mbPath;
@@ -408,6 +430,8 @@ void DeleteMacroblock(const string &in relPath) {
 }
 
 void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     // todo: if mb name is already in format: macropartfolder \\ newName(n).Macroblock.Gbx, then dont delete
     if(macroblock is null) return;
     string newPath = "";
@@ -435,6 +459,8 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
 }
 
 void SaveMacroPart(MacroPart@ part) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     string base64Items = "";
     for(uint i = 0; i < part.embeddedItems.Length; i++) {
         auto relItemPath = part.embeddedItems[i];

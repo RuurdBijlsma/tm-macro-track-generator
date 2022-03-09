@@ -9,6 +9,8 @@ class StartPositionGenerator {
 
     int i = 0;
     StartPositionGenerator(MacroPart@ part) {
+        auto editor = Editor();
+        if(editor is null || editor.PluginMapType is null) return;
         @macroblock = part.macroblock;
         auto macroblockSize = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
         // todo change placdir
@@ -21,6 +23,8 @@ class StartPositionGenerator {
     }
 
     DirectedPosition@ Next() {
+        auto editor = Editor();
+        if(editor is null || editor.PluginMapType is null) return null;
         DirectedPosition@ placePoint = null;
         while(true) {
             auto placeDir = CGameEditorPluginMap::ECardinalDirections(i % 4);

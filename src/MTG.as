@@ -1,6 +1,8 @@
 namespace MTG {
 
 void ClearMap() {
+    auto editor = Editor();
+    if(editor is null) return;    
     editor.PluginMapType.RemoveAllBlocks();
     // there may be items left in the map, remove as follows:
     if(editor.Challenge.AnchoredObjects.Length > 0) {
@@ -19,6 +21,8 @@ string GetItemsFolder() { return IO::FromUserGameFolder("Items\\"); }
 string GetBlocksFolder() { return IO::FromUserGameFolder("Blocks\\"); }
 
 bool CutMap() {
+    auto editor = Editor();
+    if(editor is null) return false;
     editor.PluginMapType.CopyPaste_SelectAll();
     if(editor.PluginMapType.CopyPaste_GetSelectedCoordsCount() != 0) {
         editor.PluginMapType.CopyPaste_Cut();

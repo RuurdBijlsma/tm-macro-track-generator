@@ -22,9 +22,10 @@ void Initialize() {
 
 // Get MacroParts from macro folder
 MacroPart@[] GetMacroParts() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return {};
     initialized = true;
-    auto pluginMapType = editor.PluginMapType;
-    auto inventory = pluginMapType.Inventory;
+    auto inventory = editor.PluginMapType.Inventory;
     auto rootNodes = inventory.RootNodes;
     MacroPart@[] macroParts = {};
     for(uint i = 0; i < rootNodes.Length; i++) {
@@ -139,6 +140,8 @@ void UpdateFilteredParts() {
 }
 
 void GenerateTrack() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     if(isGenerating) return;
 
     if(allParts.Length == 0) {
@@ -220,6 +223,8 @@ MacroPart@[]@ FilterParts(int speed, const EPartType &in type) {
 }
 
 bool Place(MacroPart@ part, DirectedPosition@ placePos) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return false;
     bool placed;
     if(GenOptions::forceColor) {
         editor.PluginMapType.ForceMacroblockColor = true;
@@ -245,6 +250,8 @@ bool Place(MacroPart@ part, DirectedPosition@ placePos) {
 }
 
 void UnPlace(MacroPart@ part, DirectedPosition@ placePos) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
     generatedMapDuration -= part.duration;
     usedParts[part.ID] = int(usedParts[part.ID]) - 1;
@@ -252,6 +259,8 @@ void UnPlace(MacroPart@ part, DirectedPosition@ placePos) {
 
 bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
     if(canceled) return false;
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return false;
     auto now = Time::Now;
     // prevent crash due to timeout
     if(GenOptions::animate || now - lastYield > 150){

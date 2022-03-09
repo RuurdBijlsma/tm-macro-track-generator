@@ -1,5 +1,5 @@
 namespace Generate {
-bool windowOpen = IsDevMode();
+bool windowOpen = false;
 vec4 baseWindowColor = vec4(6. / 255, 131. / 255, 84. / 255, .97);
 vec4 windowColor = baseWindowColor;
 int selectedTabIndex = 0;
@@ -164,6 +164,8 @@ void RenderGenerateTrack() {
 }
 
 void RenderGenerationOptions() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth() + 20);
 
     GenOptions::useSeed = TMUI::Checkbox("Use seed", GenOptions::useSeed);

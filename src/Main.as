@@ -1,11 +1,14 @@
 //todo
 // -------------- priority high: ----------------
+// * plugin sometimes crashes game when leaving editor without any error or logs
 // * Finish up parts list and part edit thing
 // * in part details page -> 2 buttons -> save changes & edit blocks which puts the macroblock on the cursor to be placed in airmode so the user can:
 //      place it -> change it -> user select it -> choose entrance / exit -> save changes to file and go back to part details page
+// clicking air macroblock button places macroblock
 
 // -------------- priority low: ---------------
 
+// * have sets/folders for parts for categorising
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
 
 // * Give warning when creating that non-block mode placed items can end up intersecting 
@@ -18,18 +21,19 @@
 // --------------- not possible: ------------------
 // * get icon of macroblock
 // * find better way of deleting macroblock
-
-CGameCtnEditorCommon@ editor = null;
-CGameCtnApp@ app = null;
+bool isInEditor = false;
 
 void Main() {
     Fonts::Load();
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     GenOptions::Initialize();
 }
 
 void Render() {
-    if(editor is null) return;
     if(!Fonts::loaded) return;
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
     auto driving = editor.PluginMapType.IsTesting || editor.PluginMapType.IsValidating;
     if(!driving){
         Create::RenderNativeUI();
@@ -38,16 +42,12 @@ void Render() {
 }
 
 void Update(float dt) {
-    @app = GetApp();
-    auto newEditor = cast<CGameCtnEditorCommon>(app.Editor);
-    bool enteredEditor = false;
-    if(editor is null && newEditor !is null) 
-        enteredEditor = true;
-    @editor = newEditor;
-    if(enteredEditor)
+    auto editor = Editor();
+    if(!isInEditor && editor !is null) 
         Generate::Initialize();
-    if(editor is null) return;
-    Create::Update();
+    isInEditor = editor !is null;
+    if(editor !is null)
+        Create::Update();
 }
 
 bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key); }
@@ -57,4 +57,9 @@ void RenderMenu() {
 	if (UI::MenuItem("\\$0A5" + Icons::Random + "\\$z Macro Track Generator", "", Generate::windowOpen)) {
 		Generate::windowOpen = !Generate::windowOpen;
 	}
+}
+
+CGameCtnEditorCommon@ Editor() {
+    auto app = GetApp();
+    return cast<CGameCtnEditorCommon@>(app.Editor);
 }

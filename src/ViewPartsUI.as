@@ -118,6 +118,8 @@ void RenderPartRow(MacroPart@ part) {
     }
     UI::SameLine();
     if(UI::Button(Icons::Eyedropper)) {
+        auto editor = Editor();
+        if(editor is null || editor.PluginMapType is null) return;
         editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
         @editor.PluginMapType.CursorMacroblockModel = part.macroblock;
     }
