@@ -9,17 +9,12 @@ vec4 buttonBackdropColor = vec4(61. / 255, 61. / 255, 61. / 255, 237. / 255);
 string hintText = "";
 
 void RenderNativeUI() {
-    if(state == EState::SelectBlocks){
-        hintText = "Select the blocks for this part, click the " + Icons::Kenney::Save + " button when done.";
-    }
-    if(state == EState::SelectPlacement) {
-        if(isEditing) {
-            hintText = "Select the MacroPart to edit.\n";
-            hintText += "Press 'V' to place the macroblock in the map. It will not destroy any existing blocks.";
-        } else {
-            hintText = "Click to place the macroblock in the map. It will not destroy any existing blocks.";
-        }
-    }
+    if(state == EState::SelectBlocks)
+        hintText = "Select the blocks for this part, press " + Icons::Kenney::Save + " button when done.";
+    if(state == EState::SelectPlacement)
+        hintText = "Click to place the macroblock in the map. It will not destroy any existing blocks.";
+    if(state == EState::EditBlocks)
+        hintText = "Edit blocks in the macroblock, select all and click " + Icons::Kenney::Save + " to continue.";
     if(state == EState::SelectEntrance) 
         hintText = "Select the position the car enters this part";
     if(state == EState::SelectExit)

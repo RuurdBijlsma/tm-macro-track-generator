@@ -1,10 +1,8 @@
 //todo
 // -------------- priority high: ----------------
-// * plugin sometimes crashes game when leaving editor without any error or logs
 // * Finish up parts list and part edit thing
-// * in part details page -> 2 buttons -> save changes & edit blocks which puts the macroblock on the cursor to be placed in airmode so the user can:
-//      place it -> change it -> user select it -> choose entrance / exit -> save changes to file and go back to part details page
-// clicking air macroblock button places macroblock
+// * clicking air macroblock button sometimes places macroblock
+// * Fix all bobsleigh entrance/exit positions
 
 // -------------- priority low: ---------------
 
@@ -17,6 +15,9 @@
 
 // * auto check if macroblock is connected to ground after selecting
 // * Scenery generator? 
+// * part gets palced when clicking the exit placement dings
+// * Highlight currently selected macroblock in parts tab list
+// * sometimes MTG bug with
 
 // --------------- not possible: ------------------
 // * get icon of macroblock
@@ -43,8 +44,11 @@ void Render() {
 
 void Update(float dt) {
     auto editor = Editor();
-    if(!isInEditor && editor !is null) 
+    if(!isInEditor && editor !is null) {
+        print("Entered editor, initializing generate");
         Generate::Initialize();
+        print("Entered editor, initialized generate");
+    }
     isInEditor = editor !is null;
     if(editor !is null)
         Create::Update();

@@ -2,6 +2,7 @@ namespace Create {
     
 enum EState {
     Idle,
+    EditBlocks,
     SelectBlocks,
     SelectPlacement,
     SelectEntrance,
@@ -14,6 +15,7 @@ enum EState {
 };
 
 EState state = EState::Idle;
+string editingFilename = "";
 bool isEditing = false;
 bool copiedMap = false;
 bool changedSaveAsFilename = false;
@@ -32,7 +34,7 @@ void Update() {
     auto app = GetApp();
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
-    if(state == EState::SelectBlocks){
+    if(state == EState::SelectBlocks || state == EState::EditBlocks){
         // wait for macroblock save
         auto currentFrame = app.BasicDialogs.Dialogs.CurrentFrame;
         if(currentFrame !is null && currentFrame.IdName == 'FrameDialogSaveAs') {
@@ -81,10 +83,6 @@ bool OnKeyPress(bool down, VirtualKey key) {
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return false;
 
-    if(state == EState::SelectPlacement && key == VirtualKey::V && down) {
-        return PlaceUserMacroblockAtCursor();
-    }
-
     if(state == EState::AirMode && key == VirtualKey::V && down) {
         if(editor.CurrentMacroBlockInfo is null) 
             return false;
@@ -132,7 +130,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         }
 
     auto isFreeLook = editor.PluginMapType.EditMode == CGameEditorPluginMap::EditMode::FreeLook;
-    if(!isEditing && state == EState::SelectPlacement && button == 0 && down && !isFreeLook) {
+    if(state == EState::SelectPlacement && button == 0 && down && !isFreeLook) {
         return PlaceUserMacroblockAtCursor();
     }
 
@@ -169,10 +167,6 @@ bool OnMouseButton(bool down, int button, int x, int y) {
                 partDetails.embeddedItems.InsertLast(blockPath);
         }
         PlaceBackMap();
-
-        // clear any accidentally selected coords
-        editor.PluginMapType.CustomSelectionCoords.RemoveRange(0, editor.PluginMapType.CustomSelectionCoords.Length);
-        editor.PluginMapType.HideCustomSelection();
         // set type from detected blocks
         partDetails.type = entranceType;
         if(exitType != EPartType::Part)
@@ -234,6 +228,7 @@ void CreateNewMacroPart() {
     state = EState::SelectBlocks;
 }
 
+// Edit whatever MacroPart is selected by cursor now
 void EditExistingMacroPart() {
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
@@ -243,8 +238,8 @@ void EditExistingMacroPart() {
     copiedMap = false;
     @macroPlace = null;
     changedSaveAsFilename = false;
+    editingFilename = "";
 
-    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
     isEditing = true;
     state = EState::SelectPlacement;
 }
@@ -360,6 +355,7 @@ bool PlaceUserMacroblockAtCursor() {
             @partDetails = MacroPart();
             @partDetails.macroblock = editor.CurrentMacroBlockInfo;
         }
+        editingFilename = partDetails.macroblock.IdName;
     }
     print("Click place!");
     auto coord = editor.PluginMapType.CursorCoord;
@@ -380,8 +376,13 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
         Warn("Failed to place macro!");
     } else {
         editor.PluginMapType.PlaceMacroblock_AirMode(partDetails.macroblock, dirPos.position, dirPos.direction);
-        state = EState::SelectEntrance;
-        Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
+        if(isEditing) {
+            state = EState::EditBlocks;
+            editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Block;
+        } else {
+            state = EState::SelectEntrance;
+            Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
+        }
     }
 }
 
@@ -410,8 +411,12 @@ void SelectNewMacroblock() {
             break;
         }
         if(mb !is null) {
-            state = EState::SelectPlacement;
             @partDetails.macroblock = mb;
+            if(isEditing) {
+                state = EState::SelectEntrance;
+            } else {
+                state = EState::SelectPlacement;
+            }
             break;
         };
         yield();
@@ -435,16 +440,20 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
     // todo: if mb name is already in format: macropartfolder \\ newName(n).Macroblock.Gbx, then dont delete
     if(macroblock is null) return;
     string newPath = "";
-    int i = 0;
-    while(true) {
-        string overwriteProtection = i == 0 ? "" : "(" + i + ")";
-        newPath = "Stadium\\" + macroPartFolder + "\\" + newName + overwriteProtection + ".Macroblock.Gbx";
-        if(newPath == macroblock.IdName) // old path was already in proper format, no need to rename
-            return;
-        if(!IO::FileExists(MTG::GetBlocksFolder() + newPath))
-            break;
-        i++;
-        print("MacroBlock already exists: " + newPath + ", adding (" + i + ") to end of filename");
+    if(isEditing && editingFilename != "") {
+        newPath = editingFilename;
+    } else {
+        int i = 0;
+        while(true) {
+            string overwriteProtection = i == 0 ? "" : "(" + i + ")";
+            newPath = "Stadium\\" + macroPartFolder + "\\" + newName + overwriteProtection + ".Macroblock.Gbx";
+            if(newPath == macroblock.IdName) // old path was already in proper format, no need to rename
+                return;
+            if(!IO::FileExists(MTG::GetBlocksFolder() + newPath))
+                break;
+            i++;
+            print("MacroBlock already exists: " + newPath + ", adding (" + i + ") to end of filename");
+        }
     }
     auto oldPath = macroblock.IdName;
     macroblock.IdName = newPath;

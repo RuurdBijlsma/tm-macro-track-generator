@@ -19,13 +19,17 @@ void PartEditor(MacroPart@ part) {
 
     UI::Text("Entrance:");
     TMUI::TextDisabled("Block: " + part.entrance.ToPrintString());
-    UI::PushID('entrance');
-    EntranceSelector(part);
-    UI::PopID();
+    if(part.type != EPartType::Start) {
+        UI::PushID('entrance');
+        EntranceSelector(part);
+        UI::PopID();
+    }
 
     UI::Text("Exit:");
     TMUI::TextDisabled("Block: " + part.exit.ToPrintString());
-    UI::PushID('exit');
-    ExitSelector(part);
-    UI::PopID();
+    if(part.type != EPartType::Finish) {
+        UI::PushID('exit');
+        ExitSelector(part);
+        UI::PopID();
+    }
 }

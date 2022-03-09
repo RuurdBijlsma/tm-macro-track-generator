@@ -16,6 +16,9 @@ int generatedMapDuration = 0;
 string[]@ deletedParts = {};
 
 void Initialize() {
+    @allParts = {};
+    @filteredParts = {};
+    @usedParts = null;
     @allParts = GetMacroParts();
     UpdateFilteredParts();
 }
@@ -32,7 +35,7 @@ MacroPart@[] GetMacroParts() {
         auto node = cast<CGameCtnArticleNodeDirectory>(rootNodes[i]);
         if(node is null) continue;
         for(uint j = 0; j < node.ChildNodes.Length; j++) {
-            if(node.ChildNodes[j].Name == macroPartFolder){
+            if(node.ChildNodes[j].Name == macroPartFolder) {
                 auto mbFolder = cast<CGameCtnArticleNodeDirectory@>(node.ChildNodes[j]);
                 for(uint k = 0; k < mbFolder.ChildNodes.Length; k++) {
                     auto articleNode = cast<CGameCtnArticleNodeArticle@>(mbFolder.ChildNodes[k]);
@@ -155,6 +158,7 @@ void GenerateTrack() {
 
     isGenerating = true;
     Initialize();
+
     @usedParts = GetUsedPartsDictionary();
     generatedMapDuration = 0;
 
@@ -189,8 +193,12 @@ void GenerateTrack() {
 
 dictionary GetFilterReasonsDictionary() {
     dictionary result;
-    for(uint i = 0; i < filteredParts.Length; i++) {
-        result.Set(filteredParts[i].ID, "");
+    if(allParts is null){
+        warn("allParts is null! shouldn't happen!");
+        return result;
+    }
+    for(uint i = 0; i < allParts.Length; i++) {
+        result.Set(allParts[i].ID, "");
     }
     return result;
 }
@@ -274,7 +282,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
         type = generatedMapDuration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
     }
     auto possibleParts = FilterParts(incomingSpeed, type);
-    print("possible parts length: " + possibleParts.Length);
+    // print("possible parts length: " + possibleParts.Length);
     bool finished = false;
 
     DirectedPosition@ placePos = null;

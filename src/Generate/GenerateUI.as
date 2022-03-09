@@ -1,5 +1,6 @@
 namespace Generate {
-bool windowOpen = false;
+bool windowOpen = IsDevMode();
+// bool windowOpen = false;
 vec4 baseWindowColor = vec4(6. / 255, 131. / 255, 84. / 255, .97);
 vec4 windowColor = baseWindowColor;
 int selectedTabIndex = 0;

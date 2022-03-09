@@ -31,7 +31,7 @@ class StartPositionGenerator {
             auto x = startX + spiral.x;
             auto z = startZ + spiral.y;
             for(uint i = resumeI; i < mapSize.y * 2; i++) {
-                int y = startY + int(Math::Round((i % 2 == 0) ? i * 0.5 : i * -0.5));
+                int y = startY + int(Math::Round((i % 2 == 0) ? int(i) : int(i) * -1));
                 if(y >= int(mapSize.y) || y < 1) continue;
                 auto tryPlace = DirectedPosition(x, y, z, placeDir);
                 auto canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, tryPlace.position, tryPlace.direction);
@@ -44,8 +44,10 @@ class StartPositionGenerator {
             if(placePoint is null) {
                 // couldn't place mb at any height at current x,z coord
                 resumeI = 0;
-                if(++i % 4 == 0)
+                if(++i % 4 == 0) {
                     spiral.GoNext();
+                    spiral.GoNext();
+                }
             } else {
                 break;
             }

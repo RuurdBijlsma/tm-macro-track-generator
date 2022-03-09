@@ -2,6 +2,13 @@ namespace Parts {
 
 MacroPart@ selectedPart = null;
 
+void PickMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
+    editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
+    @editor.PluginMapType.CursorMacroblockModel = macroblock;
+}
+
 void RenderInterface() {
     if(selectedPart is null) {
         if(TMUI::Button("Refresh")) {
@@ -28,6 +35,13 @@ void RenderInterface() {
     }
 }
 
+void EditBlocks(ref@ partRef) {
+    auto part = cast<MacroPart@>(partRef);
+    PickMacroblock(part.macroblock);
+    yield();
+    Create::EditExistingMacroPart();
+}
+
 void RenderPart(MacroPart@ part) {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
     if(TMUI::Button("Back to list")) {
@@ -43,13 +57,17 @@ void RenderPart(MacroPart@ part) {
     } else
         UI::Text("No embedded items");
         
+    if(TMUI::Button(Icons::Eyedropper)) {
+        PickMacroblock(part.macroblock);
+    }
+    UI::SameLine();
+    if(TMUI::Button("Edit blocks")) {
+        startnew(EditBlocks, part);
+    }
+    UI::SameLine();
     if(TMUI::Button("Save changes")) {
         Create::SaveMacroPart(part);
         @selectedPart = null;
-    }
-    UI::SameLine();
-    if(TMUI::Button("Edit entrance / exit block")) {
-        print("edit");
     }
     UI::PopTextWrapPos();
 }
@@ -118,10 +136,7 @@ void RenderPartRow(MacroPart@ part) {
     }
     UI::SameLine();
     if(UI::Button(Icons::Eyedropper)) {
-        auto editor = Editor();
-        if(editor is null || editor.PluginMapType is null) return;
-        editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Macroblock;
-        @editor.PluginMapType.CursorMacroblockModel = part.macroblock;
+        PickMacroblock(part.macroblock);
     }
     if(UI::IsItemHovered()) {
         UI::BeginTooltip();
