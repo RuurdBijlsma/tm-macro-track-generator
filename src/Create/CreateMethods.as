@@ -9,7 +9,6 @@ enum EState {
     SelectExit,
     ConfirmItems,
     EnterDetails,
-    SavedConfirmation,
     AirMode,
     Failed
 };
@@ -134,6 +133,15 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         return PlaceUserMacroblockAtCursor();
     }
 
+    if(state == EState::AirMode && button == 0 && down && !isFreeLook && editor.CurrentMacroBlockInfo !is null) {
+        auto coord = int3(editor.PluginMapType.CursorCoord.x, editor.PluginMapType.CursorCoord.y, editor.PluginMapType.CursorCoord.z);
+        auto placed = editor.PluginMapType.PlaceMacroblock_AirMode(editor.CurrentMacroBlockInfo, coord, editor.PluginMapType.CursorDir);
+        if(placed) {
+            state = EState::Idle;
+        }
+        return true;
+    }
+
     if(state == EState::SelectEntrance && button == 0 && down && !isFreeLook) {
         auto coord = editor.PluginMapType.CursorCoord;
         auto absEntrance = DirectedPosition(coord.x, coord.y, coord.z, editor.PluginMapType.CursorDir);
@@ -154,7 +162,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         auto anchoredObjects = editor.Challenge.AnchoredObjects;
         for(uint i = 0; i < anchoredObjects.Length; i++) {
             auto itemPath = anchoredObjects[i].ItemModel.IdName;
-            if(itemPath.EndsWith(".Item.Gbx") && partDetails.embeddedItems.Find(itemPath) == -1){
+            if(itemPath.ToLower().EndsWith(".item.gbx") && partDetails.embeddedItems.Find(itemPath) == -1){
                 partDetails.embeddedItems.InsertLast(itemPath);
             }
         }
@@ -163,7 +171,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
             auto article = cast<CGameCtnArticle@>(blocks[i].BlockInfo.ArticlePtr);
             if(article is null || article.BlockItem_ItemModelArticle is null) continue;
             auto blockPath = article.BlockItem_ItemModelArticle.IdName;
-            if(blockPath.EndsWith(".Block.Gbx") && partDetails.embeddedItems.Find(blockPath) == -1)
+            if(blockPath.ToLower().EndsWith(".block.gbx") && partDetails.embeddedItems.Find(blockPath) == -1)
                 partDetails.embeddedItems.InsertLast(blockPath);
         }
         PlaceBackMap();
@@ -185,15 +193,42 @@ bool OnMouseButton(bool down, int button, int x, int y) {
     return false;
 }
 
+void ResetState() {
+    @blockInfo = null;
+    @detectedTags = null;
+    entranceType = EPartType::Part;
+    exitType = EPartType::Part;
+    mbPath = "";
+    @partDetails = null;
+    @macroPlace = null;
+    changedSaveAsFilename = false;
+    copiedMap = false;
+    isEditing = false;
+    editingFilename = "";
+    state = EState::Idle;
+}
+
 void CleanUp() {
-    if(state == EState::AirMode) return;
+    print("Cleanup called");
     auto tempMacroblock = MTG::GetBlocksFolder() + macroPartFolder + "\\temp_MTG.Macroblock.Gbx";
     if(IO::FileExists(tempMacroblock)) {
         print("Clean up " + tempMacroblock);
         IO::Delete(tempMacroblock);
     }
-    PlaceBackMap();
     Generate::windowColor = Generate::baseWindowColor;
+
+    if(state != EState::EditBlocks && state != EState::SelectEntrance && state != EState::SelectExit) return;
+    print("Placing back map!");
+    PlaceBackMap();
+}
+
+void Fail(string reason) {
+    ResetState();
+    state = EState::Failed;
+    failureReason = reason;
+    Generate::selectedTabIndex = 3;
+    Generate::windowOpen = true;
+    Warn(reason);
 }
 
 void PlaceBackMap() {
@@ -210,18 +245,17 @@ void PlaceBackMap() {
 }
 
 void CreateNewMacroPart() {
+    ResetState();
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     Generate::selectedTabIndex = 3;
-    // Reset variables
     @partDetails = MacroPart();
-    if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
-        partDetails.author = editor.Challenge.AuthorNickName;
+    auto app = GetApp();
+    auto network = cast<CTrackManiaNetwork@>(app.Network);
+    if(network !is null && network.PlayerInfo !is null && network.PlayerInfo.Name != "") {
+        partDetails.author = network.PlayerInfo.Name;
         print("author name: " + partDetails.author);
     }
-    copiedMap = false;
-    @macroPlace = null;
-    changedSaveAsFilename = false;
 
     editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::CopyPaste;
     isEditing = false;
@@ -230,15 +264,10 @@ void CreateNewMacroPart() {
 
 // Edit whatever MacroPart is selected by cursor now
 void EditExistingMacroPart() {
+    ResetState();
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     Generate::selectedTabIndex = 3;
-    // Reset variables
-    @partDetails = null;
-    copiedMap = false;
-    @macroPlace = null;
-    changedSaveAsFilename = false;
-    editingFilename = "";
 
     isEditing = true;
     state = EState::SelectPlacement;
@@ -346,8 +375,10 @@ bool PlaceUserMacroblockAtCursor() {
         if(editor.CurrentMacroBlockInfo is null) 
             return false;
         @partDetails = MacroPart::FromMacroblock(editor.CurrentMacroBlockInfo);
-        if(editor.Challenge !is null && editor.Challenge.AuthorNickName != "") {
-            partDetails.author = editor.Challenge.AuthorNickName;
+        auto app = GetApp();
+        auto network = cast<CTrackManiaNetwork@>(app.Network);
+        if(network !is null && network.PlayerInfo !is null && network.PlayerInfo.Name != "") {
+            partDetails.author = network.PlayerInfo.Name;
             print("author name: " + partDetails.author);
         }
         if(partDetails is null) {
@@ -371,9 +402,7 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
     copiedMap = MTG::CutMap();
     if(dirPos is null) {
         CleanUp();
-        state = EState::Failed;
-        failureReason = "Failed to find placement position for macro.";
-        Warn("Failed to place macro!");
+        Fail("Failed to find placement position for macro.");
     } else {
         editor.PluginMapType.PlaceMacroblock_AirMode(partDetails.macroblock, dirPos.position, dirPos.direction);
         if(isEditing) {
@@ -405,12 +434,16 @@ void SelectNewMacroblock() {
         auto mb = editor.PluginMapType.GetMacroblockModelFromFilePath(mbPathW);
         print("Mb isnull? " + (mb is null));
         if(maxWait-- < 0) {
-            failureReason = "Failed to get newly saved macroblock";
-            state = EState::Failed;
+            Fail("Failed to get newly saved macroblock");
             CleanUp();
             break;
         }
         if(mb !is null) {
+            if(mb.IsGround) {
+                Fail("The selection was connected to the ground, isn't usable for MacroParts.");
+                editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Block;
+                break;
+            }
             @partDetails.macroblock = mb;
             if(isEditing) {
                 state = EState::SelectEntrance;
@@ -434,11 +467,11 @@ void DeleteMacroblock(const string &in relPath) {
     }
 }
 
-void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
+string RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
     auto editor = Editor();
-    if(editor is null || editor.PluginMapType is null) return;
+    if(editor is null || editor.PluginMapType is null) return "";
     // todo: if mb name is already in format: macropartfolder \\ newName(n).Macroblock.Gbx, then dont delete
-    if(macroblock is null) return;
+    if(macroblock is null) return "";
     string newPath = "";
     if(isEditing && editingFilename != "") {
         newPath = editingFilename;
@@ -447,8 +480,9 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
         while(true) {
             string overwriteProtection = i == 0 ? "" : "(" + i + ")";
             newPath = "Stadium\\" + macroPartFolder + "\\" + newName + overwriteProtection + ".Macroblock.Gbx";
-            if(newPath == macroblock.IdName) // old path was already in proper format, no need to rename
-                return;
+            if(newPath == macroblock.IdName) { // old path was already in proper format, no need to rename
+                return newPath;
+            }
             if(!IO::FileExists(MTG::GetBlocksFolder() + newPath))
                 break;
             i++;
@@ -465,11 +499,12 @@ void RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
         Generate::deletedParts.RemoveAt(delListIndex);
     editor.PluginMapType.SaveMacroblock(macroblock);
     DeleteMacroblock(oldPath);
+    return newPath;
 }
 
-void SaveMacroPart(MacroPart@ part) {
+string SaveMacroPart(MacroPart@ part) {
     auto editor = Editor();
-    if(editor is null || editor.PluginMapType is null) return;
+    if(editor is null || editor.PluginMapType is null) return "";
     string base64Items = "";
     for(uint i = 0; i < part.embeddedItems.Length; i++) {
         auto relItemPath = part.embeddedItems[i];
@@ -485,8 +520,9 @@ void SaveMacroPart(MacroPart@ part) {
     }
     part.macroblock.Description = part.ToString() + MacroPart::BaseSeparator + base64Items;
     editor.PluginMapType.SaveMacroblock(part.macroblock);
-    RenameMacroblock(part.macroblock, "MTG-" + part.author + "-" + part.name);
+    auto id = RenameMacroblock(part.macroblock, "MTG-" + part.author + "-" + part.name);
     Generate::Initialize();
+    return id;
 }
 
 }

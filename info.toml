@@ -6,4 +6,5 @@ category = "Map Editor"
 version = "0.1.0"
 
 [script]
+timeout = 10000
 imports = [ "Dialogs.as" ]

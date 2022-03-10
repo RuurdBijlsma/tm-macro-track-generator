@@ -20,7 +20,7 @@ void RenderNativeUI() {
     if(state == EState::SelectExit)
         hintText = "Select the position the car exits this part";
     if(state == EState::AirMode) 
-        hintText += "Press 'V' to place a macroblock in the map using air block mode.";
+        hintText += "Click to place a macroblock in the map using air block mode.";
     
     
     auto editor = Editor();
@@ -44,7 +44,7 @@ void RenderNativeUI() {
 
         if(!editor.PluginMapType.HideInventory) {
             if(placeMode == CGameEditorPluginMap::EPlaceMode::CopyPaste) {
-                if(state == EState::Idle) {
+                if(state == EState::Idle || state == EState::Failed) {
                     Button::create.visible = true;
                 } else {
                     Button::cancel.visible = true;
@@ -57,7 +57,7 @@ void RenderNativeUI() {
             || placeMode == CGameEditorPluginMap::EPlaceMode::FreeMacroblock 
             || placeMode == CGameEditorPluginMap::EPlaceMode::Item) {
                 RenderMTGBackdrop();
-                if(editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::Macroblock || editor.PluginMapType.PlaceMode == CGameEditorPluginMap::EPlaceMode::FreeMacroblock) {
+                if(editor.CurrentMacroBlockInfo !is null) {
                     Button::mtgAirmode.visible = true;
                 }
                 Button::mtgClear.visible = true;
@@ -156,11 +156,8 @@ void RenderInterface() {
 
     if(state == EState::EnterDetails)
         RenderEnterDetailsState();
-    
-    if(state == EState::SavedConfirmation)
-        RenderSavedConfirmationState();
 
-    if(state != EState::Idle && state != EState::SavedConfirmation && TMUI::Button("Cancel creating MacroPart")) {
+    if(state != EState::Idle && state != EState::Failed && TMUI::Button("Cancel creating MacroPart")) {
         CleanUp();
         state = EState::Idle;
     }
@@ -228,12 +225,11 @@ void RenderSelectConnectorState(bool entrance = true) {
 }
 
 void RenderConfirmItemsState() {
-    UI::Text("Embedding the following items in the macroblock");
+    UI::Text("Embedding the following items and blocks in the macroblock");
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
     UI::TextDisabled('It is recommended to only embed items and blocks from the preset location: "zzz_ImportedItems/SetName/ItemName.Item.Gbx" when sharing parts.');
     UI::TextDisabled("When sharing a MacroPart the custom items and blocks need to be in the exact same folder for everyone using it.");
-    UI::PopTextWrapPos();
-    UI::BeginChild("CustomItemsList", vec2(UI::GetWindowContentRegionWidth(), 150));
+    UI::BeginChild("CustomItemsList", vec2(UI::GetWindowContentRegionWidth(), 300));
     for(int i = int(partDetails.embeddedItems.Length) - 1; i >= 0; i--) {
         if(UI::RedButton(Icons::Trash)) {
             partDetails.embeddedItems.RemoveAt(i);
@@ -242,6 +238,7 @@ void RenderConfirmItemsState() {
         UI::Text(partDetails.embeddedItems[i]);
     }
     UI::EndChild();
+    UI::PopTextWrapPos();
 
     if(TMUI::Button("Confirm items")) {
         state = EState::EnterDetails;
@@ -253,15 +250,17 @@ void RenderEnterDetailsState() {
     PartEditor(partDetails);
 
     if(TMUI::Button("Save MacroPart")) {
-        SaveMacroPart(partDetails);
-        state = EState::SavedConfirmation;
-    }
-}
-
-void RenderSavedConfirmationState() {
-    UI::Text(Icons::Check + " Created MacroPart!");
-    if(TMUI::Button("Ok")) {
+        auto id = SaveMacroPart(partDetails);
         state = EState::Idle;
+        print("ID of new macropart: " + id);
+        for(uint i = 0; i < Generate::allParts.Length; i++) {
+            if(Generate::allParts[i].ID == id) {
+                print("Found id in allparts list!");
+                Parts::PickMacroblock(Generate::allParts[i].macroblock);
+                break;
+            }
+        }
+        Generate::selectedTabIndex = 2;
     }
 }
 

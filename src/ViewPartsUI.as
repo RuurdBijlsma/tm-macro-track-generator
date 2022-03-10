@@ -15,6 +15,8 @@ void RenderInterface() {
             Generate::Initialize();
         }
         if(UI::BeginTable("parts", (Generate::usedParts is null) ? 3 : 4)) {
+            auto editor = Editor();
+            if(editor is null || editor.PluginMapType is null) return;
             if(Generate::usedParts !is null)
                 UI::TableSetupColumn("##useCount", UI::TableColumnFlags::WidthFixed, 5);
             UI::TableSetupColumn("##name", UI::TableColumnFlags::WidthStretch, 1);
@@ -25,7 +27,8 @@ void RenderInterface() {
                 UI::PushID("partRow" + i);
                 UI::TableNextRow();
                 auto part = Generate::allParts[i];
-                RenderPartRow(part);
+                auto selected = editor.CurrentMacroBlockInfo !is null && part.ID == editor.CurrentMacroBlockInfo.IdName;
+                RenderPartRow(part, selected);
                 UI::PopID();
             }
             UI::EndTable();
@@ -63,6 +66,7 @@ void RenderPart(MacroPart@ part) {
     UI::SameLine();
     if(TMUI::Button("Edit blocks")) {
         startnew(EditBlocks, part);
+        @selectedPart = null;
     }
     UI::SameLine();
     if(TMUI::Button("Save changes")) {
@@ -72,7 +76,7 @@ void RenderPart(MacroPart@ part) {
     UI::PopTextWrapPos();
 }
 
-void RenderPartRow(MacroPart@ part) {
+void RenderPartRow(MacroPart@ part, bool selected) {
     string reason = string(Generate::filterReasons[part.ID]);
 
     if(Generate::usedParts !is null) { 
@@ -91,6 +95,10 @@ void RenderPartRow(MacroPart@ part) {
     }
 
     UI::TableNextColumn();
+    if(selected) {
+        UI::Text(Icons::Eyedropper);
+        UI::SameLine();
+    }
     if(part.type == EPartType::Finish) {
         UI::Text("\\$e22" + Icons::FlagCheckered);
         UI::SameLine();

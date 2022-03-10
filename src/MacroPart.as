@@ -55,7 +55,7 @@ class MacroPart {
 
     bool get_HasCustomItems() {
         for(uint i = 0; i < embeddedItems.Length; i++) {
-            if(embeddedItems[i].EndsWith(".Item.Gbx"))
+            if(embeddedItems[i].ToLower().EndsWith(".item.gbx"))
                 return true;
         }
         return false;
@@ -63,7 +63,7 @@ class MacroPart {
 
     bool get_HasCustomBlocks() {
         for(uint i = 0; i < embeddedItems.Length; i++) {
-            if(embeddedItems[i].EndsWith(".Block.Gbx"))
+            if(embeddedItems[i].ToLower().EndsWith(".block.gbx"))
                 return true;
         }
         return false;

@@ -1,25 +1,32 @@
 //todo
 // -------------- priority high: ----------------
-// * Finish up parts list and part edit thing
-// * clicking air macroblock button sometimes places macroblock
-// * Fix all bobsleigh entrance/exit positions
+// * filter out parts that wont be able to connect to any other part (ex. filter: must include dirt, start is pick that has dirt and connects to IceRoad, but there are not parts with iceroad entrance connector. It then takes a very long time to figure out)
+//      - can be done in global filter?
+//      - but def also in local filter
+// * rotate through start blocks before trying other positions for start block
+// * add option, dont allow part to connect to itsself
+
 
 // -------------- priority low: ---------------
-
+// * browse/download part sets from IX
 // * have sets/folders for parts for categorising
-// * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
+// * auto import items/download blocks from macroparts
 
 // * Give warning when creating that non-block mode placed items can end up intersecting 
-//      so dont make large section with just ghost/free blocks or items, 
+//      so dont make large section with just ghost blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
-// * auto check if macroblock is connected to ground after selecting
+// * disallow bobsleigh -> other types connections
+// * cancelling generate pukes out bunch of start parts
+// * in part view ui add button to change entrance/exit only
 // * Scenery generator? 
-// * part gets palced when clicking the exit placement dings
-// * Highlight currently selected macroblock in parts tab list
-// * sometimes MTG bug with
+// * improve performance
+//      - Use connection type for connection check instead of can place
+//      - profile whats taking longest
+//      - dont shuffle every backtrack
 
-// --------------- not possible: ------------------
+// --------------- not possible?: ------------------
+// * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
 // * get icon of macroblock
 // * find better way of deleting macroblock
 bool isInEditor = false;
@@ -48,6 +55,10 @@ void Update(float dt) {
         print("Entered editor, initializing generate");
         Generate::Initialize();
         print("Entered editor, initialized generate");
+    }
+    if(isInEditor && editor is null) {
+        print("Left editor, resetting states");
+        Create::ResetState();
     }
     isInEditor = editor !is null;
     if(editor !is null)

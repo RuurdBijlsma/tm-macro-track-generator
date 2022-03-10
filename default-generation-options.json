@@ -22,7 +22,7 @@
     "author": "",
     "reuse": 1,
     "forceColor": true,
-    "autoColoring": false,
+    "autoColoring": true,
     "clearMap": true,
     "color": 5,
     "startHeight": 0.1
