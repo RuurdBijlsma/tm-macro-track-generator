@@ -181,7 +181,8 @@ void RenderGenerationOptions() {
     TMUI::TextDisabled("The generation process is much slower when animating.");
     GenOptions::airMode = !TMUI::Checkbox("Add wood supports", !GenOptions::airMode);
     TMUI::TextDisabled("Track generation is more restricted with wood supports, because they can get in the way.");
-    GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
+    GenOptions::desiredMapLength = UI::SliderInt("Map length (seconds)", GenOptions::desiredMapLength, 10, 3000);
+    // GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
 
     GenOptions::clearMap = TMUI::Checkbox("Clear map before generating", GenOptions::clearMap);
     GenOptions::forceColor = TMUI::Checkbox("Force color", GenOptions::forceColor);
@@ -278,6 +279,7 @@ void RenderFilterOptions() {
     UI::SameLine();
     GenOptions::allowCustomBlocks = TMUI::Checkbox("Custom blocks", GenOptions::allowCustomBlocks);
     GenOptions::respawnable = TMUI::Checkbox("Parts must be respawnable", GenOptions::respawnable);
+    GenOptions::noRepeats = TMUI::Checkbox("Prevent parts being connecting to themselves", GenOptions::noRepeats);
     GenOptions::considerSpeed = TMUI::Checkbox("Consider speed when connecting parts", GenOptions::considerSpeed);
     if(GenOptions::considerSpeed) {
         TMUI::TextDisabled("Maximum difference in speed between parts:");

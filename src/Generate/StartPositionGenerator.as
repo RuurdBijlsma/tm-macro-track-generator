@@ -4,7 +4,7 @@ class StartPositionGenerator {
     int startX;
     int startY;
     int startZ;
-    uint resumeI;
+    uint resumeJ;
     SpiralOut@ spiral;
 
     int i = 0;
@@ -19,7 +19,7 @@ class StartPositionGenerator {
         startY = int(Math::Round(mapSize.y * GenOptions::startHeight));
         startZ = mapSize.z / 2 - macroblockSize.z / 2;
         @spiral = SpiralOut();
-        resumeI = 0;
+        resumeJ = 0;
     }
 
     DirectedPosition@ Next() {
@@ -30,23 +30,23 @@ class StartPositionGenerator {
             auto placeDir = CGameEditorPluginMap::ECardinalDirections(i % 4);
             auto x = startX + spiral.x;
             auto z = startZ + spiral.y;
-            for(uint i = resumeI; i < mapSize.y * 2; i++) {
-                int y = startY + int(Math::Round((i % 2 == 0) ? int(i) : int(i) * -1));
+            for(uint j = resumeJ; j < mapSize.y * 2; j++) {
+                int y = startY + int(Math::Round((i % 2 == 0) ? int(j) * 8 : int(j) * -8));
                 if(y >= int(mapSize.y) || y < 1) continue;
                 auto tryPlace = DirectedPosition(x, y, z, placeDir);
                 auto canPlace = editor.PluginMapType.CanPlaceMacroblock(macroblock, tryPlace.position, tryPlace.direction);
                 if(canPlace) {
-                    resumeI = i + 1;
+                    resumeJ = j + 1;
                     @placePoint = tryPlace;
                     break;
                 }
             }
             if(placePoint is null) {
                 // couldn't place mb at any height at current x,z coord
-                resumeI = 0;
+                resumeJ = 0;
                 if(++i % 4 == 0) {
-                    spiral.GoNext();
-                    spiral.GoNext();
+                    for(uint j = 0; j < 8; j++)
+                        spiral.GoNext();
                 }
             } else {
                 break;

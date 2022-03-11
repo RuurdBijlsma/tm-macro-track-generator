@@ -45,10 +45,21 @@ void EditBlocks(ref@ partRef) {
     Create::EditExistingMacroPart();
 }
 
+void EditEntranceExit(ref@ partRef) {
+    auto part = cast<MacroPart@>(partRef);
+    PickMacroblock(part.macroblock);
+    yield();
+    Create::EditEntranceExit();
+}
+
 void RenderPart(MacroPart@ part) {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
     if(TMUI::Button("Back to list")) {
         @selectedPart = null;
+    }
+    UI::SameLine();
+    if(TMUI::Button(Icons::Eyedropper)) {
+        PickMacroblock(part.macroblock);
     }
     TMUI::TextDisabled(part.ID);
 
@@ -60,17 +71,17 @@ void RenderPart(MacroPart@ part) {
     } else
         UI::Text("No embedded items");
         
-    if(TMUI::Button(Icons::Eyedropper)) {
-        PickMacroblock(part.macroblock);
-    }
-    UI::SameLine();
     if(TMUI::Button("Edit blocks")) {
         startnew(EditBlocks, part);
         @selectedPart = null;
     }
     UI::SameLine();
+    if(TMUI::Button("Edit entrance/exit")) {
+        startnew(EditEntranceExit, part);
+    }
+    UI::SameLine();
     if(TMUI::Button("Save changes")) {
-        Create::SaveMacroPart(part);
+        Create::SaveMacroPart(part, false);
         @selectedPart = null;
     }
     UI::PopTextWrapPos();

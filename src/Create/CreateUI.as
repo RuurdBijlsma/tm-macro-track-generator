@@ -211,6 +211,14 @@ void RenderSelectConnectorState(bool entrance = true) {
     UI::TextDisabled("Hiding the map to make selection easier, it will come back!");
     UI::Text(hintText);
     UI::NewLine();
+
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return;
+    auto coord = editor.PluginMapType.CursorCoord;
+    auto absEntrance = DirectedPosition(coord.x, coord.y, coord.z, editor.PluginMapType.CursorDir);
+    auto relCoord = MTG::ToRelativePosition(partDetails.macroblock, macroPlace, absEntrance);
+    UI::Text(relCoord.ToPrintString());
+
     if(blockInfo is null) {
         UI::Text("Connector type can automatically be determined if an official block is selected.");
         UI::TextDisabled("Otherwise you will have to specify it later");
@@ -253,13 +261,9 @@ void RenderEnterDetailsState() {
         auto id = SaveMacroPart(partDetails);
         state = EState::Idle;
         print("ID of new macropart: " + id);
-        for(uint i = 0; i < Generate::allParts.Length; i++) {
-            if(Generate::allParts[i].ID == id) {
-                print("Found id in allparts list!");
-                Parts::PickMacroblock(Generate::allParts[i].macroblock);
-                break;
-            }
-        }
+        auto part = MTG::PartFromID(id);
+        if(part !is null)
+            Parts::PickMacroblock(part.macroblock);
         Generate::selectedTabIndex = 2;
     }
 }

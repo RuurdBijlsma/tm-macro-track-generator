@@ -1,5 +1,14 @@
 namespace MTG {
 
+MacroPart@ PartFromID(string ID) {
+    for(uint i = 0; i < Generate::allParts.Length; i++) {
+        if(Generate::allParts[i].ID == ID) {
+            return Generate::allParts[i];
+        }
+    }
+    return null;
+}
+
 void ClearMap() {
     auto editor = Editor();
     if(editor is null) return;    

@@ -1,14 +1,10 @@
 //todo
 // -------------- priority high: ----------------
-// * filter out parts that wont be able to connect to any other part (ex. filter: must include dirt, start is pick that has dirt and connects to IceRoad, but there are not parts with iceroad entrance connector. It then takes a very long time to figure out)
-//      - can be done in global filter?
-//      - but def also in local filter
-// * rotate through start blocks before trying other positions for start block
-// * add option, dont allow part to connect to itsself
 
 
 // -------------- priority low: ---------------
-// * browse/download part sets from IX
+// * support sub folders in zzz_macroparts
+// * bug in editing macropart doesn't get entrance/exit position right when not facing north
 // * have sets/folders for parts for categorising
 // * auto import items/download blocks from macroparts
 
@@ -24,6 +20,9 @@
 //      - Use connection type for connection check instead of can place
 //      - profile whats taking longest
 //      - dont shuffle every backtrack
+// * option to optimize backtracking
+//      - remove randomness but use fancy algorithms
+// * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
 
 // --------------- not possible?: ------------------
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
@@ -52,12 +51,12 @@ void Render() {
 void Update(float dt) {
     auto editor = Editor();
     if(!isInEditor && editor !is null) {
-        print("Entered editor, initializing generate");
+        // print("Entered editor, initializing generate");
         Generate::Initialize();
-        print("Entered editor, initialized generate");
+        // print("Entered editor, initialized generate");
     }
     if(isInEditor && editor is null) {
-        print("Left editor, resetting states");
+        // print("Left editor, resetting states");
         Create::ResetState();
     }
     isInEditor = editor !is null;

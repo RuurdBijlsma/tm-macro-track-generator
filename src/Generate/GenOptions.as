@@ -32,6 +32,14 @@ string[]@ disabledParts = {};
 EDifficulty[]@ difficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
 
 
+bool _noRepeats = true;
+bool get_noRepeats(){return _noRepeats;}
+void set_noRepeats(bool v) {
+    if(_noRepeats != v) {
+        OnChange();
+        _noRepeats = v;
+    }
+}
 bool _clearMap = false;
 bool get_clearMap(){return _clearMap;}
 void set_clearMap(bool v) {
@@ -225,6 +233,8 @@ Json::Value ToJson() {
     obj["disabledParts"] = Json::Array();
     for(uint i = 0; i < disabledParts.Length; i++)
         obj["disabledParts"].Add(disabledParts[i]);
+        
+    obj["noRepeats"] = noRepeats;
     obj["clearMap"] = clearMap;
     obj["startHeight"] = startHeight;
     obj["forceColor"] = forceColor;
@@ -267,6 +277,7 @@ void FromJson(Json::Value obj) {
     for(uint i = 0; i < obj["disabledParts"].Length; i++) 
         disabledParts.InsertLast(obj["disabledParts"][i]);
 
+    noRepeats = obj["noRepeats"];
     clearMap = obj["clearMap"];
     startHeight = obj["startHeight"];
     autoColoring = obj["autoColoring"];

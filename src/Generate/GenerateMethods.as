@@ -8,6 +8,7 @@ int lastYield = 0;
 int startCount = 0;
 int partCount = 0;
 int finishCount = 0;
+int usedPartsCount = 0;
 dictionary@ usedParts = null;
 dictionary@ filterReasons = null;
 bool lastGenerateFailed = false;
@@ -60,6 +61,8 @@ MacroPart@[]@ GlobalFilterParts() {
     partCount = 0;
     finishCount = 0;
     MacroPart@[]@ filtered = {};
+    @usedParts = GetUsedPartsDictionary();
+    usedPartsCount = 0;
     @filterReasons = GetFilterReasonsDictionary();
 
     for(uint i = 0; i < allParts.Length; i++) {
@@ -128,11 +131,40 @@ MacroPart@[]@ GlobalFilterParts() {
             partCount++;
         filtered.InsertLast(part);
     }
+    for(int i = int(filtered.Length - 1); i >= 0; i--) {
+        auto part = filtered[i];
+        if(IsUnconnectable(part, filtered)) {
+            if(part.type == EPartType::Start)
+                startCount--;
+            if(part.type == EPartType::Finish)
+                finishCount--;
+            filterReasons[part.ID] = "Part can't connect to any other available parts";
+            filtered.RemoveAt(i);
+        }
+    }
     if(startCount == 0) 
         warn("There are no start parts that fit the given filter.");
     if(finishCount == 0)
         warn("There are no finish parts that fit the given filter.");
     return filtered;
+}
+
+bool IsUnconnectable(MacroPart@ part, MacroPart@[]@ parts) {
+        bool canConnectToOthers = false;
+        bool othersCanConnectTo = false;
+        // todo, create dictionary here of part->how many connection options that part has
+        // for fancy algorithms
+        for(uint j = 0; j < parts.Length; j++) {
+            auto otherPart = parts[j];
+            if(part.type == EPartType::Finish || (!canConnectToOthers && CanPartConnect(part, otherPart))) 
+                canConnectToOthers = true;
+            if(part.type == EPartType::Start || (!othersCanConnectTo && CanPartConnect(otherPart, part))) 
+                othersCanConnectTo = true;
+            if(canConnectToOthers && othersCanConnectTo)
+                break;
+        }
+        // if no other part (including itsself) can connect to this part, then filter it out
+        return !canConnectToOthers || !othersCanConnectTo;
 }
 
 void UpdateFilteredParts() {
@@ -159,7 +191,6 @@ void GenerateTrack() {
     isGenerating = true;
     Initialize();
 
-    @usedParts = GetUsedPartsDictionary();
     generatedMapDuration = 0;
 
     print("Found " + filteredParts.Length + " available parts after global filter is applied.");
@@ -211,15 +242,13 @@ dictionary GetUsedPartsDictionary() {
     return result;
 }
 
-MacroPart@[]@ FilterParts(int speed, const EPartType &in type) {
+MacroPart@[]@ FilterParts(MacroPart@ previousPart, const EPartType &in type) {
     MacroPart@[]@ filtered = {};
     for(uint i = 0; i < filteredParts.Length; i++) {
         auto part = filteredParts[i];
         if(part.type != type)
             continue;
-        if(type != EPartType::Start && GenOptions::considerSpeed && Math::Abs(part.enterSpeed - speed) > GenOptions::maxSpeedVariation)
-            continue;
-        if(GenOptions::reuse == EReuse::NoReuse && int(usedParts[part.ID]) != 0)
+        if(previousPart !is null && !CanPartConnect(previousPart, part)) 
             continue;
         filtered.InsertLast(part);
     }
@@ -228,6 +257,23 @@ MacroPart@[]@ FilterParts(int speed, const EPartType &in type) {
         filtered = Sort::SortParts(filtered, usedParts);
     }
     return filtered;
+}
+
+bool CanPartConnect(MacroPart@ partA, MacroPart@ partB) {
+    if(GenOptions::noRepeats && partA.ID == partB.ID)
+        return false;
+    if(partB.type != EPartType::Start && GenOptions::considerSpeed && Math::Abs(partA.exitSpeed - partB.enterSpeed) > GenOptions::maxSpeedVariation)
+        return false;
+    if(partA.exitConnector != partB.entranceConnector)
+        return false;
+    if(GenOptions::reuse == EReuse::NoReuse && int(usedParts[partB.ID]) != 0)
+        return false;
+    if(filteredParts.Length > 0 && usedPartsCount > 0) {
+        float meanPartUse = float(usedPartsCount) / filteredParts.Length;
+        if(GenOptions::reuse == EReuse::PreferNoReuse && int(usedParts[partB.ID]) > meanPartUse * 3)
+            return false;
+    }
+    return true;
 }
 
 bool Place(MacroPart@ part, DirectedPosition@ placePos) {
@@ -252,6 +298,7 @@ bool Place(MacroPart@ part, DirectedPosition@ placePos) {
     }
     if(placed) {
         usedParts[part.ID] = int(usedParts[part.ID]) + 1;
+        usedPartsCount++;
         generatedMapDuration += part.duration;
     }
     return placed;
@@ -263,15 +310,16 @@ void UnPlace(MacroPart@ part, DirectedPosition@ placePos) {
     editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
     generatedMapDuration -= part.duration;
     usedParts[part.ID] = int(usedParts[part.ID]) - 1;
+    usedPartsCount--;
 }
 
-bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
+bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = null) {
     if(canceled) return false;
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return false;
     auto now = Time::Now;
     // prevent crash due to timeout
-    if(GenOptions::animate || now - lastYield > 150){
+    if(GenOptions::animate || now - lastYield > 900){
         lastYield = now;
         yield();
     }
@@ -281,7 +329,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
     } else {
         type = generatedMapDuration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
     }
-    auto possibleParts = FilterParts(incomingSpeed, type);
+    auto possibleParts = FilterParts(previousPart, type);
     // print("possible parts length: " + possibleParts.Length);
     bool finished = false;
 
@@ -298,8 +346,8 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
         while(true) {
             if(type == EPartType::Start) {
                 @placePos = starts.Next();
-                print("Test start pos: " + placePos.ToPrintString());
                 if(placePos is null) break;
+                print("Test start pos: " + placePos.ToPrintString());
             }
             bool canPlace = editor.PluginMapType.CanPlaceMacroblock_NoDestruction(part.macroblock, placePos.position, placePos.direction);
             // print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + generatedMapDuration);
@@ -312,7 +360,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, int incomingSpeed = 0) {
                 return true;
             auto partEntrancePos = MTG::ToAbsolutePosition(part.macroblock, placePos, part.exit);
             partEntrancePos.MoveForward();
-            finished = PlacePart(partEntrancePos, part.exitSpeed);
+            finished = PlacePart(partEntrancePos, part);
             if(!finished && !canceled) {
                 UnPlace(part, placePos);
                 // print("Removing!");
