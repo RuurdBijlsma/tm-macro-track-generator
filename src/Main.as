@@ -1,20 +1,17 @@
 //todo
 // -------------- priority high: ----------------
-
+// * auto import items/download blocks from macroparts
 
 // -------------- priority low: ---------------
 // * support sub folders in zzz_macroparts
 // * bug in editing macropart doesn't get entrance/exit position right when not facing north
-// * have sets/folders for parts for categorising
-// * auto import items/download blocks from macroparts
+// * have folders for parts for categorising
 
 // * Give warning when creating that non-block mode placed items can end up intersecting 
 //      so dont make large section with just ghost blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
-// * disallow bobsleigh -> other types connections
 // * cancelling generate pukes out bunch of start parts
-// * in part view ui add button to change entrance/exit only
 // * Scenery generator? 
 // * improve performance
 //      - Use connection type for connection check instead of can place

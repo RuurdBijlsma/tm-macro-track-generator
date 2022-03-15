@@ -146,6 +146,8 @@ MacroPart@[]@ GlobalFilterParts() {
         warn("There are no start parts that fit the given filter.");
     if(finishCount == 0)
         warn("There are no finish parts that fit the given filter.");
+        
+    print("global filter");
     return filtered;
 }
 
