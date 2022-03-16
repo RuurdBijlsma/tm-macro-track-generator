@@ -16,6 +16,14 @@ bool canceled = false;
 int generatedMapDuration = 0;
 string[]@ deletedParts = {};
 
+void ResetState() {
+    @allParts = {};
+    @filteredParts = {};
+    @usedParts = null;
+    @filterReasons = null;
+    @deletedParts = {};
+}
+
 void Initialize() {
     @allParts = {};
     @filteredParts = {};

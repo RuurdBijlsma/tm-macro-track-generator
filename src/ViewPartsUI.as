@@ -88,7 +88,10 @@ void RenderPart(MacroPart@ part) {
 }
 
 void RenderPartRow(MacroPart@ part, bool selected) {
-    string reason = string(Generate::filterReasons[part.ID]);
+    string reason = "";
+    if(Generate::filterReasons !is null) {
+        reason = string(Generate::filterReasons[part.ID]);
+    }
 
     if(Generate::usedParts !is null) { 
         UI::PushStyleVar(UI::StyleVar::ItemInnerSpacing, vec2(0, 0));

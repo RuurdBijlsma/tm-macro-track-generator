@@ -48,17 +48,17 @@ void Render() {
 void Update(float dt) {
     auto editor = Editor();
     if(!isInEditor && editor !is null) {
-        // print("Entered editor, initializing generate");
         Generate::Initialize();
-        // print("Entered editor, initialized generate");
     }
     if(isInEditor && editor is null) {
-        // print("Left editor, resetting states");
+        @Parts::selectedPart = null;
+        Generate::ResetState();
         Create::ResetState();
     }
     isInEditor = editor !is null;
-    if(editor !is null)
+    if(editor !is null) {
         Create::Update();
+    }
 }
 
 bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key); }
