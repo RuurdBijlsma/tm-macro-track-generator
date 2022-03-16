@@ -32,6 +32,12 @@ void Main() {
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     GenOptions::Initialize();
+
+    auto a = Create::DetectMapTags();
+    print("Detected tags in map:");
+    for(uint i = 0; i < a.Length; i++) {
+        print(a[i]);
+    }
 }
 
 void Render() {

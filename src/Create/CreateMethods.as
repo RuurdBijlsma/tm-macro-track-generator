@@ -58,8 +58,6 @@ void Update() {
         if(blockInfo !is null) {
             connector = GetConnector(blockInfo, editor.PluginMapType.CursorDir);
             @detectedTags = GetTags(blockInfo.BlockInfo);
-            if(!isEditingEntranceExit)
-                partDetails.AddTags(detectedTags);
             if(entrance && blockInfo.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::Start) {
                 type = EPartType::Start;
             } else if(!entrance && blockInfo.BlockInfo.EdWaypointType == CGameCtnBlockInfo::EWayPointType::Finish) {
@@ -361,6 +359,21 @@ EConnector GetConnector(CGameCtnBlock@ block, CGameEditorPluginMap::ECardinalDir
     return EConnector::Platform;
 }
 
+string[]@ DetectMapTags() {
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return {};
+    auto blocks = editor.PluginMapType.ClassicBlocks;
+    string[]@ resultingTags = {};
+    for(uint i = 0; i < blocks.Length; i++) {
+        auto newTags = GetTags(blocks[i].BlockInfo);
+        for(uint j = 0; j < newTags.Length; j++) {
+            if(resultingTags.Find(newTags[j]) == -1)
+                resultingTags.InsertLast(newTags[j]);
+        }
+    }
+    return resultingTags;
+}
+
 string[]@ GetTags(CGameCtnBlockInfo@ blockInfo) {
     string[]@ result = {};
     if(blockInfo is null || !blockInfo.PageName.Contains('/')) return result;
@@ -369,26 +382,38 @@ string[]@ GetTags(CGameCtnBlockInfo@ blockInfo) {
         result.InsertLast("Tech");
     if(rootPage == 'RoadDirt')
         result.InsertLast("Dirt");
-    if(rootPage == 'RoadBump') {
-        result.InsertLast("Tech");
+    if(rootPage == 'RoadBump')
         result.InsertLast("Sausage");
-    }
     if(rootPage == 'RoadIce') {
         result.InsertLast("Bobsleigh");
         result.InsertLast("Ice");
     }
-    if(rootPage == 'PlatformTech')
-        result.InsertLast("FullSpeed");
-    if(rootPage == 'PlatformDirt')
+    if(rootPage == 'PlatformTech') {
+        result.InsertLast("Platform");
+        result.InsertLast("Tech");
+    }
+    if(rootPage == 'PlatformDirt') {
+        result.InsertLast("Platform");
         result.InsertLast("Dirt");
-    if(rootPage == 'PlatformIce')
+    }
+    if(rootPage == 'PlatformIce') {
+        result.InsertLast("Platform");
         result.InsertLast("Ice");
-    if(rootPage == 'PlatformGrass')
+    }
+    if(rootPage == 'PlatformGrass') {
+        result.InsertLast("Platform");
         result.InsertLast("Grass");
-    if(rootPage == 'PlatformPlastic')
+    }
+    if(rootPage == 'PlatformPlastic') {
+        result.InsertLast("Platform");
         result.InsertLast("Plastic");
-    if(rootPage == 'Water')
+    }
+    if(rootPage == 'RoadWater') {
         result.InsertLast("Water");
+        if(blockInfo.Name.Contains("Platform")) {
+            result.InsertLast("Platform");
+        }
+    }
     if(rootPage == 'Walls')
         result.InsertLast("Tech");
     return result;
@@ -445,6 +470,7 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
             state = EState::EditBlocks;
             editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Block;
         } else {
+            partDetails.AddTags(DetectMapTags());
             state = EState::SelectEntrance;
             Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
         }
@@ -482,6 +508,7 @@ void SelectNewMacroblock() {
             }
             @partDetails.macroblock = mb;
             if(isEditing) {
+                partDetails.AddTags(DetectMapTags());
                 state = EState::SelectEntrance;
                 Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
             } else {
