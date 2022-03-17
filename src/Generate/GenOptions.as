@@ -28,6 +28,7 @@ namespace GenOptions {
 string[]@ includeTags = {};
 string[]@ excludeTags = {};
 string[]@ disabledParts = {};
+string[]@ disabledFolders = {};
 // - difficulty range
 EDifficulty[]@ difficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
 
@@ -233,6 +234,9 @@ Json::Value ToJson() {
     obj["disabledParts"] = Json::Array();
     for(uint i = 0; i < disabledParts.Length; i++)
         obj["disabledParts"].Add(disabledParts[i]);
+    obj["disabledFolders"] = Json::Array();
+    for(uint i = 0; i < disabledFolders.Length; i++)
+        obj["disabledFolders"].Add(disabledFolders[i]);
         
     obj["noRepeats"] = noRepeats;
     obj["clearMap"] = clearMap;
@@ -276,6 +280,9 @@ void FromJson(Json::Value obj) {
     disabledParts = {};
     for(uint i = 0; i < obj["disabledParts"].Length; i++) 
         disabledParts.InsertLast(obj["disabledParts"][i]);
+    disabledFolders = {};
+    for(uint i = 0; i < obj["disabledFolders"].Length; i++) 
+        disabledFolders.InsertLast(obj["disabledFolders"][i]);
 
     noRepeats = obj["noRepeats"];
     clearMap = obj["clearMap"];

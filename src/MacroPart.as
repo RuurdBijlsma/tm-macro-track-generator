@@ -28,6 +28,7 @@ EDifficulty[]@ availableDifficulties = {EDifficulty::Beginner, EDifficulty::Inte
 
 class MacroPart {
     CGameCtnMacroBlockInfo@ macroblock = null;
+    string folder = "";
 
     string name = "";
     string author = "";

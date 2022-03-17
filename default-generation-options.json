@@ -2,6 +2,7 @@
     "includeTags": [],
     "excludeTags": [],
     "disabledParts": [],
+    "disabledFolders": [],
     "difficulties": [
         0,
         1,

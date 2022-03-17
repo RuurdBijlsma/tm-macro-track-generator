@@ -9,11 +9,55 @@ void PickMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
     @editor.PluginMapType.CursorMacroblockModel = macroblock;
 }
 
+void DisableFolder(const string &in folder, int startIndex = 0) {
+    bool foundFolder = false;
+    for(uint i = startIndex; i < Generate::allParts.Length; i++) {
+        auto part = Generate::allParts[i];
+        if(part.folder.StartsWith(folder)) {
+            foundFolder = true;
+            GenOptions::disabledParts.InsertLast(part.ID);
+        } else if(foundFolder) {
+            break;
+        }
+    }
+}
+
+void EnableFolder(const string &in folder) {
+    bool foundFolder = false;
+    for(int i = int(GenOptions::disabledParts.Length) - 1; i >= 0; i--) {
+        auto part = MTG::PartFromID(GenOptions::disabledParts[i]);
+        if(part.folder.StartsWith(folder)) {
+            foundFolder = true;
+            GenOptions::disabledParts.RemoveAt(i);
+        }
+    }
+}
+
 void RenderInterface() {
     if(selectedPart is null) {
         if(TMUI::Button("Refresh")) {
             Generate::Initialize();
         }
+        UI::SameLine();
+        if(TMUI::Button("Disable all")) {
+            string folder = "";
+            for(uint i = 0; i < Generate::allParts.Length; i++) {
+                auto part = Generate::allParts[i];
+                if(part.folder != folder) {
+                    folder = part.folder;
+                    DisableFolder(folder, i);
+                    GenOptions::disabledFolders.InsertLast(folder);
+                }
+                GenOptions::OnChange();
+            }
+        }
+        UI::SameLine();
+        if(TMUI::Button("Enable all")) {
+            GenOptions::disabledParts = {};
+            GenOptions::disabledFolders = {};
+            GenOptions::OnChange();
+        }
+        string folder = "";
         if(UI::BeginTable("parts", (Generate::usedParts is null) ? 3 : 4)) {
             auto editor = Editor();
             if(editor is null || editor.PluginMapType is null) return;
@@ -25,9 +69,14 @@ void RenderInterface() {
             // UI::TableHeadersRow();
             for(uint i = 0; i < Generate::allParts.Length; i++) {
                 UI::PushID("partRow" + i);
-                UI::TableNextRow();
                 auto part = Generate::allParts[i];
+                if(part.folder != folder) {
+                    folder = part.folder;
+                    UI::TableNextRow();
+                    RenderSeperatorRow(folder);
+                }
                 auto selected = editor.CurrentMacroBlockInfo !is null && part.ID == editor.CurrentMacroBlockInfo.IdName;
+                UI::TableNextRow();
                 RenderPartRow(part, selected);
                 UI::PopID();
             }
@@ -85,6 +134,42 @@ void RenderPart(MacroPart@ part) {
         @selectedPart = null;
     }
     UI::PopTextWrapPos();
+}
+
+void RenderSeperatorRow(const string &in folder) {
+    if(Generate::usedParts !is null)
+        UI::TableNextColumn();
+
+    UI::TableNextColumn();
+    UI::Separator();
+    UI::Text(folder);
+    UI::Separator();
+    
+    UI::TableNextColumn();
+    UI::TableNextColumn();
+    UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(4, 5));
+
+    auto listIndex = GenOptions::disabledFolders.Find(folder);
+    bool isInList = listIndex != -1;
+    auto checkValue = UI::Checkbox("##separatorCheck", !isInList);
+    if(checkValue == isInList) {
+        print("Toggle");
+        if(isInList) {
+            EnableFolder(folder);
+            GenOptions::disabledFolders.RemoveAt(listIndex);
+        } else {
+            DisableFolder(folder);
+            GenOptions::disabledFolders.InsertLast(folder);
+        }
+        GenOptions::OnChange();
+    }
+    if(UI::IsItemHovered()) {
+        UI::BeginTooltip();
+        UI::Text(isInList ? "Enable Set" : "Disable Set");
+        UI::EndTooltip();
+    }
+
+    UI::PopStyleVar(1);
 }
 
 void RenderPartRow(MacroPart@ part, bool selected) {

@@ -1,6 +1,9 @@
 //todo
 // -------------- priority high: ----------------
 // * auto import items/download blocks from macroparts
+// * On startup:
+//      - Check if detault macroparts are there, if not put macroparts into blocks folder, and put embedded items in items folder
+//      - Check for every macropart in blocks folder if the embedded items exist in the items folder
 
 // -------------- priority low: ---------------
 // * support sub folders in zzz_macroparts
@@ -32,12 +35,6 @@ void Main() {
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     GenOptions::Initialize();
-
-    auto a = Create::DetectMapTags();
-    print("Detected tags in map:");
-    for(uint i = 0; i < a.Length; i++) {
-        print(a[i]);
-    }
 }
 
 void Render() {

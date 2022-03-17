@@ -32,6 +32,33 @@ void Initialize() {
     UpdateFilteredParts();
 }
 
+MacroPart@[] ExploreNode(CGameCtnArticleNodeDirectory@ node, string folder = "") {
+    MacroPart@[] macroParts = {};
+    if(node is null) return macroParts;
+    for(uint i = 0; i < node.ChildNodes.Length; i++) {
+        auto childNode = node.ChildNodes[i];
+        if(node.ChildNodes[i].IsDirectory) {
+            auto newFolder = folder == "" ? string(childNode.Name) : folder + "/" + childNode.Name;
+            auto newParts = ExploreNode(cast<CGameCtnArticleNodeDirectory@>(childNode), newFolder);
+            for(uint j = 0; j < newParts.Length; j++) {
+                macroParts.InsertLast(newParts[j]);
+            }
+        } else {
+            auto articleNode = cast<CGameCtnArticleNodeArticle@>(childNode);
+            if(articleNode is null) continue;
+            auto macroblock = cast<CGameCtnMacroBlockInfo@>(articleNode.Article.LoadedNod);
+            if(macroblock is null) continue;
+            if(macroblock.IdName.EndsWith("temp_MTG.Macroblock.Gbx")) continue;
+            if(deletedParts.Find(macroblock.IdName) != -1) continue;
+            auto macroPart = MacroPart::FromMacroblock(macroblock);
+            if(macroPart is null) continue;
+            macroPart.folder = folder;
+            macroParts.InsertLast(macroPart);
+        }
+    }
+    return macroParts;
+}
+
 // Get MacroParts from macro folder
 MacroPart@[] GetMacroParts() {
     auto editor = Editor();
@@ -41,22 +68,12 @@ MacroPart@[] GetMacroParts() {
     auto rootNodes = inventory.RootNodes;
     MacroPart@[] macroParts = {};
     for(uint i = 0; i < rootNodes.Length; i++) {
-        auto node = cast<CGameCtnArticleNodeDirectory>(rootNodes[i]);
+        auto node = cast<CGameCtnArticleNodeDirectory@>(rootNodes[i]);
         if(node is null) continue;
         for(uint j = 0; j < node.ChildNodes.Length; j++) {
             if(node.ChildNodes[j].Name == macroPartFolder) {
-                auto mbFolder = cast<CGameCtnArticleNodeDirectory@>(node.ChildNodes[j]);
-                for(uint k = 0; k < mbFolder.ChildNodes.Length; k++) {
-                    auto articleNode = cast<CGameCtnArticleNodeArticle@>(mbFolder.ChildNodes[k]);
-                    if(articleNode is null) continue;
-                    auto macroblock = cast<CGameCtnMacroBlockInfo@>(articleNode.Article.LoadedNod);
-                    if(macroblock is null) continue;
-                    if(macroblock.IdName.EndsWith("temp_MTG.Macroblock.Gbx")) continue;
-                    if(deletedParts.Find(macroblock.IdName) != -1) continue;
-                    auto macroPart = MacroPart::FromMacroblock(macroblock);
-                    if(macroPart is null) continue;
-                    macroParts.InsertLast(macroPart);
-                }
+                macroParts = ExploreNode(cast<CGameCtnArticleNodeDirectory@>(node.ChildNodes[j]));
+                break;
             }
         }
     }
@@ -76,6 +93,22 @@ MacroPart@[]@ GlobalFilterParts() {
     for(uint i = 0; i < allParts.Length; i++) {
         auto part = allParts[i];
         if(GenOptions::disabledParts.Find(part.ID) != -1) {
+            filterReasons[part.ID] = "Part is disabled";
+            continue;
+        }
+        auto isInDisabledFolder = false;
+        for(uint j = 0; j < GenOptions::disabledFolders.Length; j++) {
+            auto folder = GenOptions::disabledFolders[j];
+            if(part.folder.StartsWith(folder)) {
+                isInDisabledFolder = true;
+                break;
+            }
+        }
+        if(isInDisabledFolder) {
+            filterReasons[part.ID] = "Part is in disabled set";
+            continue;
+        }
+        if(GenOptions::disabledFolders.Find(part.folder) != -1) {
             filterReasons[part.ID] = "Part is disabled";
             continue;
         }

@@ -15,6 +15,7 @@ enum EState {
 
 EState state = EState::Idle;
 string editingFilename = "";
+int editStage = 0;
 bool isEditing = false;
 bool isEditingEntranceExit = false;
 bool copiedMap = false;
@@ -208,6 +209,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
 }
 
 void ResetState() {
+    editStage = 0;
     @blockInfo = null;
     @detectedTags = null;
     entranceType = EPartType::Part;
@@ -440,7 +442,7 @@ void SetMacroPartFromCursor() {
 bool PlaceUserMacroblockAtCursor() {
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return false;
-    if(isEditing || isEditingEntranceExit) {
+    if((isEditing || isEditingEntranceExit)) {
         if(editor.CurrentMacroBlockInfo is null) 
             return false;
         SetMacroPartFromCursor();
@@ -466,7 +468,8 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
         if(isEditingEntranceExit) {
             state = EState::SelectEntrance;
             Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
-        } else if(isEditing) {
+        } else if(isEditing && editStage == 0) {
+            editStage = 1;
             state = EState::EditBlocks;
             editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Block;
         } else {
@@ -508,9 +511,7 @@ void SelectNewMacroblock() {
             }
             @partDetails.macroblock = mb;
             if(isEditing) {
-                partDetails.AddTags(DetectMapTags());
-                state = EState::SelectEntrance;
-                Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
+                PlaceUserMacroblock(macroPlace);
             } else {
                 state = EState::SelectPlacement;
             }
