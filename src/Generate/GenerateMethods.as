@@ -413,7 +413,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = 
             if(type != EPartType::Start || finished || canceled)
                 break;
         }
-        if(finished) break;
+        if(finished || canceled) break;
     }
     
     return finished;

@@ -6,23 +6,21 @@
 //      - Check for every macropart in blocks folder if the embedded items exist in the items folder
 
 // -------------- priority low: ---------------
-// * support sub folders in zzz_macroparts
-// * bug in editing macropart doesn't get entrance/exit position right when not facing north
-// * have folders for parts for categorising
-
 // * Give warning when creating that non-block mode placed items can end up intersecting 
 //      so dont make large section with just ghost blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
-// * cancelling generate pukes out bunch of start parts
+// * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
+
 // * Scenery generator? 
+
+// * option to optimize backtracking
+//      - remove randomness but use fancy algorithms
+
 // * improve performance
 //      - Use connection type for connection check instead of can place
 //      - profile whats taking longest
 //      - dont shuffle every backtrack
-// * option to optimize backtracking
-//      - remove randomness but use fancy algorithms
-// * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
 
 // --------------- not possible?: ------------------
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
