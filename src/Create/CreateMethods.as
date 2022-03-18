@@ -121,7 +121,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
                     Generate::windowOpen = true;
                     if(editor.CurrentMacroBlockInfo !is null)
                         @Parts::selectedPart = MTG::PartFromID(editor.CurrentMacroBlockInfo.IdName);
-                } else if(customButton.action == "generate") {
+                } else if(customButton.action == "generate") {;
                     Generate::selectedTabIndex = 0;
                     Generate::windowOpen = !Generate::windowOpen;
                 } else if(customButton.action == "clear") {
@@ -158,7 +158,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         @partDetails.entrance = MTG::ToRelativePosition(partDetails.macroblock, macroPlace, absEntrance);
         print("Entrance relative: " + partDetails.entrance.ToPrintString());
         state = EState::SelectExit;
-        Generate::windowColor = vec4(35./255, 1./255, 1./255, 1);
+        TMUI::windowColor = vec4(35./255, 1./255, 1./255, 1);
         print("Mouse button return true 4");
         return true;
     }
@@ -168,7 +168,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         @partDetails.exit = MTG::ToRelativePosition(partDetails.macroblock, macroPlace, absExit);
         print("Exit relative: " + partDetails.exit.ToPrintString());
         editor.PluginMapType.PlaceMode = CGameEditorPluginMap::EPlaceMode::Block;
-        Generate::windowColor = Generate::baseWindowColor;
+        TMUI::windowColor = TMUI::baseWindowColor;
 
         if(isEditingEntranceExit) {
             state = EState::Idle;
@@ -256,7 +256,7 @@ void CleanUp() {
         print("Clean up " + tempMacroblock);
         IO::Delete(tempMacroblock);
     }
-    Generate::windowColor = Generate::baseWindowColor;
+    TMUI::windowColor = TMUI::baseWindowColor;
 
     if(state != EState::EditBlocks && state != EState::SelectEntrance && state != EState::SelectExit) return;
     print("Placing back map!");
@@ -492,7 +492,7 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
         editor.PluginMapType.PlaceMacroblock_AirMode(partDetails.macroblock, dirPos.position, dirPos.direction);
         if(isEditingEntranceExit) {
             state = EState::SelectEntrance;
-            Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
+            TMUI::windowColor = vec4(1./255, 30./255, 1./255, 1);
         } else if(isEditing && editStage == 0) {
             editStage = 1;
             state = EState::EditBlocks;
@@ -500,7 +500,7 @@ void PlaceUserMacroblock(DirectedPosition@ dirPos) {
         } else {
             partDetails.AddTags(DetectMapTags());
             state = EState::SelectEntrance;
-            Generate::windowColor = vec4(1./255, 30./255, 1./255, 1);
+            TMUI::windowColor = vec4(1./255, 30./255, 1./255, 1);
         }
     }
 }
@@ -509,6 +509,16 @@ void SelectNewMacroblock() {
     auto app = GetApp();
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
+    int maxUps = 5;
+    while(app.BasicDialogs.DialogSaveAs_Path != "Stadium\\") {
+        print("Doing hierarchy up, because path = " + app.BasicDialogs.DialogSaveAs_Path);
+        app.BasicDialogs.DialogSaveAs_HierarchyUp();
+        if(maxUps-- <= 0) {
+            Fail("Couldn't find macroblock save path, check where macroparts are being saved, it should be Blocks\\Stadium\\");
+            CleanUp();
+            return;
+        }
+    }
     auto maxWait = 500;
     mbPath = macroPartFolder + "\\temp_MTG";
     app.BasicDialogs.String = mbPath;

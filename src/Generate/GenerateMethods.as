@@ -30,6 +30,7 @@ void Initialize() {
     @filteredParts = {};
     @usedParts = null;
     @allParts = GetMacroParts();
+    CheckEmbeddedItems();
     UpdateFilteredParts();
 }
 
@@ -80,6 +81,78 @@ MacroPart@[] GetMacroParts() {
     }
 
     return macroParts;
+}
+
+void CheckEmbeddedItems() {
+    // If user is still in the process of answering the prompt, don't check again
+    if(TMDialog::promptOpen) return;
+    auto missingBlock = false;
+    string[]@ missingItems = {};
+    for(uint i = 0; i < allParts.Length; i++) {
+        auto part = allParts[i];
+        for(uint j = 0; j < part.embeddedItems.Length; j++) {
+            auto relItemPath = part.embeddedItems[j];
+            auto itemPath = MTG::GetItemsFolder() + relItemPath;
+            if(!IO::FileExists(itemPath)) {
+                // print("Part: " + part.ID + ", item: " + relItemPath);
+                if(relItemPath.ToLower().EndsWith(".block.gbx"))
+                    missingBlock = true;
+                if(missingItems.Find(relItemPath) == -1) {
+                    auto buffer = part.GetItemBuffer(relItemPath);
+                    print("Buffer size: " + buffer.GetSize());
+                    if(buffer.GetSize() == 0) {
+                        warn("Invalid buffer! Can't get item: " + relItemPath);
+                        continue;
+                    }
+                    missingItems.InsertLast(relItemPath);
+                    
+                    auto folderParts = relItemPath.Split("\\");
+                    auto folder = relItemPath.SubStr(0, relItemPath.Length - folderParts[folderParts.Length - 1].Length);
+                    // print("Folder: " + folder);
+                    print("Buffer Size: " + buffer.GetSize());
+                    // create folders recursive
+                    MTG::CreateFolderRecursive(MTG::GetItemsFolder(), folder);
+                    print("ItemPath: " + itemPath);
+                    IO::File f(itemPath);
+                    // print("Filemode: " + tostring(f.GetMode()));
+                    f.Open(IO::FileMode::Write);
+                    f.Write(buffer);
+                    f.Close();
+                }
+            }
+        }
+    }
+    if(missingBlock) {
+        print("One of the missing items is a block, restart is required to use them");
+        // restart is needed
+        auto app = GetApp();
+        auto editor = Editor();
+        if(editor is null || editor.PluginMapType is null) return;
+        TMDialog::Alert("Some MacroParts contain custom items or blocks which are not yet loaded.", "Restart the game to be able to use these parts");
+    } else if(missingItems.Length > 0) {
+        print("MIssing items? : " + missingItems.Length);
+#if DEPENDENCY_ITEMEXCHANGE
+    print("DEPENDENCY DETECTED");
+    startnew(AskImportItems, missingItems);
+#else
+    print("DEPENDENCY NOT HERE");
+    TMDialog::Alert("Some MacroParts contain custom items or blocks which are not yet loaded.", "Restart the game to be able to use these parts");
+#endif
+    }
+}
+
+void AskImportItems(ref@ missingItems) {
+    auto items = cast<string[]@>(missingItems);
+    print("All missing items can be imported!");
+    TMDialog::Confirm(
+        "Some MacroParts contain custom items which are not yet loaded.", 
+        "Import " + items.Length + " item"+(items.Length == 1 ? "" : "s")+" now using the ItemExchange plugin? Restarting the game also loads the items.", 
+        "Import now", "No");
+    while(TMDialog::promptOpen) yield();
+    print("Prompt closed with answer: " + TMDialog::promptResult);
+    if(TMDialog::promptResult) {
+        ItemExchange::ImportUnloadedItems();
+    }
 }
 
 MacroPart@[]@ GlobalFilterParts() {

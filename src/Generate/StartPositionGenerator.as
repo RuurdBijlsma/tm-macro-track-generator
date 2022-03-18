@@ -6,23 +6,29 @@ class StartPositionGenerator {
     int startZ;
     uint resumeJ;
     SpiralOut@ spiral;
+    bool failed;
 
     int i = 0;
     StartPositionGenerator(MacroPart@ part) {
         auto editor = Editor();
         if(editor is null || editor.PluginMapType is null) return;
         @macroblock = part.macroblock;
-        auto macroblockSize = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
-        // todo change placdir
-        mapSize = editor.Challenge.Size;
-        startX = mapSize.x / 2 - macroblockSize.x / 2;
-        startY = int(Math::Round(mapSize.y * GenOptions::startHeight));
-        startZ = mapSize.z / 2 - macroblockSize.z / 2;
-        @spiral = SpiralOut();
-        resumeJ = 0;
+        if(macroblock.GeneratedBlockInfo !is null) {
+            auto macroblockSize = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
+            // todo change placdir
+            mapSize = editor.Challenge.Size;
+            startX = mapSize.x / 2 - macroblockSize.x / 2;
+            startY = int(Math::Round(mapSize.y * GenOptions::startHeight));
+            startZ = mapSize.z / 2 - macroblockSize.z / 2;
+            @spiral = SpiralOut();
+            resumeJ = 0;
+        } else {
+            failed = true;
+        }
     }
 
     DirectedPosition@ Next() {
+        if(failed) return null;
         auto editor = Editor();
         if(editor is null || editor.PluginMapType is null) return null;
         DirectedPosition@ placePoint = null;

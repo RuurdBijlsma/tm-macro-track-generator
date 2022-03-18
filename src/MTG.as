@@ -135,4 +135,37 @@ DirectedPosition@ ToRelativePosition(CGameCtnMacroBlockInfo@ macroblock, Directe
     return DirectedPosition::Subtract(cursor, northArrow);
 }
 
+void CreateFolderRecursive(string basePath, string createPath){
+    string separator = "/";
+    basePath.Replace("\\", separator);
+    createPath.Replace("\\", separator);
+    // remove double //
+    while(basePath.Contains(separator + separator)){
+        basePath = basePath.Replace(separator + separator, separator);
+    }
+    while(createPath.Contains(separator + separator)){
+        createPath = createPath.Replace(separator + separator, separator);
+    }
+    // Format path to the following template
+    // basePath: C://Users/Ruurd/ (ends with separator)
+    // createPath: OpenplanetNext/Plugins/lib (no separator at start or end)
+    if(basePath.EndsWith(separator)){
+        basePath = basePath.SubStr(0, basePath.Length - 1);
+    }
+    if(createPath.StartsWith(separator)) {
+        createPath = createPath.SubStr(1);
+    }
+    if(createPath.EndsWith(separator)) {
+        createPath = createPath.SubStr(0, createPath.Length - 1);
+    }
+    auto parts = createPath.Split(separator);
+
+    string path = basePath;
+    for(uint i = 0; i < parts.Length; i++) {
+        if(!IO::FolderExists(path + separator + parts[i])) {
+            IO::CreateFolder(path + separator + parts[i]);
+        }
+        path += separator + parts[i];
+    }
+}
 }

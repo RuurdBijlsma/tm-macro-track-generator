@@ -101,6 +101,32 @@ class MacroPart {
             tostring(int(difficulty))
         }, MacroPart::DetailSeparator);
     }
+
+    MemoryBuffer GetItemBuffer(string relItemPath) {
+        string input = macroblock.Description;
+        auto versionParts = input.Split(MacroPart::DetailSeparator);
+        auto version = versionParts[0];
+        MemoryBuffer buffer = MemoryBuffer();
+        if(versionParts.Length < 1)
+            return buffer;
+        auto index = embeddedItems.Find(relItemPath);
+        if(index == -1) {
+            warn("Requested relItemPath not in embeddedItems");
+            return buffer;
+        }
+        if(version == "1") {
+            auto baseParts = input.Split(MacroPart::BaseSeparator);
+            if(baseParts.Length < 2) return buffer;
+            auto base64Strings = baseParts[1].Split(MacroPart::DetailSeparator);
+            if(base64Strings.Length != embeddedItems.Length) {
+                warn("Mismatch between base64 strings and embedded items length");
+                return buffer;
+            }
+            buffer.WriteFromBase64(base64Strings[index]);
+            return buffer;
+        }
+        return buffer;
+    }
 };
 
 namespace MacroPart {

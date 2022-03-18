@@ -45,6 +45,7 @@ void Render() {
     if(!driving){
         Create::RenderNativeUI();
         Generate::RenderInterface();
+        TMDialog::Render();
     }
 }
 
