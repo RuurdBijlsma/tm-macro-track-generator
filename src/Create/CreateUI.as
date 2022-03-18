@@ -164,11 +164,16 @@ void RenderInterface() {
 }
 
 void RenderFailedState() {
+    UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
     UI::Text("Something went wrong!");
-    UI::Text(failureReason);
+    string[] reasons = failureReason.Split('\n');
+    for(uint i = 0; i < reasons.Length; i++) {
+        UI::Text(reasons[i]);
+    }
     if(TMUI::Button("Go back")) {
         state = EState::Idle;
     }
+    UI::PopTextWrapPos();
 }
 
 void RenderIdleState() {
@@ -259,6 +264,7 @@ void RenderEnterDetailsState() {
 
     if(TMUI::Button("Save MacroPart")) {
         auto id = SaveMacroPart(partDetails);
+        if(id == "") return;
         state = EState::Idle;
         print("ID of new macropart: " + id);
         auto part = MTG::PartFromID(id);

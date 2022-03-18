@@ -136,7 +136,7 @@ void RenderGenerateTrack() {
         }
 
         if(Generate::isGenerating) {
-            UI::Text("Generated map duration: " + Generate::generatedMapDuration + " s");
+            UI::Text("Tried " + Generate::triedParts + " parts, generated map duration: " + Generate::generatedMapDuration + " s");
         }
 
         bool canGenerate = Generate::startCount > 0 && Generate::finishCount > 0;

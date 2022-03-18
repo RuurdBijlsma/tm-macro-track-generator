@@ -129,13 +129,17 @@ bool OnMouseButton(bool down, int button, int x, int y) {
                 } else {
                     warn("This button action wasn't implemented");
                 }
+                print("Mouse button return true 1");
                 return true;
             }
         }
 
     auto isFreeLook = editor.PluginMapType.EditMode == CGameEditorPluginMap::EditMode::FreeLook;
     if(state == EState::SelectPlacement && button == 0 && down && !isFreeLook) {
-        return PlaceUserMacroblockAtCursor();
+        auto v = PlaceUserMacroblockAtCursor();
+        if(v)
+            print("Mouse button return true 2");
+        return v;
     }
 
     if(state == EState::AirMode && button == 0 && down && !isFreeLook && editor.CurrentMacroBlockInfo !is null) {
@@ -144,6 +148,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         if(placed) {
             state = EState::Idle;
         }
+        print("Mouse button return true 3");
         return true;
     }
 
@@ -154,6 +159,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
         print("Entrance relative: " + partDetails.entrance.ToPrintString());
         state = EState::SelectExit;
         Generate::windowColor = vec4(35./255, 1./255, 1./255, 1);
+        print("Mouse button return true 4");
         return true;
     }
     if(state == EState::SelectExit && button == 0 && down && !isFreeLook) {
@@ -171,6 +177,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
             Parts::PickMacroblock(partDetails.macroblock);
             @Parts::selectedPart = null;
             PlaceBackMap();
+            print("Mouse button return true 5");
             return true;
         }
 
@@ -199,13 +206,30 @@ bool OnMouseButton(bool down, int button, int x, int y) {
             state = EState::EnterDetails;
         } else {
             state = EState::ConfirmItems;
+            CheckItemsExist();
         }
         Generate::selectedTabIndex = 3;
         Generate::windowOpen = true;
+        print("Mouse button return true 6");
         return true;
     }
 
     return false;
+}
+
+void CheckItemsExist() {
+    string[]@ dontExistItems = {};
+    for(uint i = 0; i < partDetails.embeddedItems.Length; i++) {
+        auto relItemPath = partDetails.embeddedItems[i];
+        auto itemPath = MTG::GetItemsFolder() + relItemPath;
+        print("Checking item exists: " + itemPath);
+        if(!IO::FileExists(itemPath)) {
+            dontExistItems.InsertLast(itemPath);
+        }
+    }
+    if(dontExistItems.Length > 0) {
+        Fail("The following embedded items don't exist on the disk: \n* " + string::Join(dontExistItems, "\n* "));
+    }
 }
 
 void ResetState() {
@@ -249,6 +273,7 @@ void Fail(string reason) {
 }
 
 void PlaceBackMap() {
+    print("Place back map called!");
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     if(copiedMap) {
@@ -576,6 +601,10 @@ string SaveMacroPart(MacroPart@ part, bool rename = true) {
         auto relItemPath = part.embeddedItems[i];
         auto itemPath = MTG::GetItemsFolder() + relItemPath;
         print("itemPath: " + itemPath);
+        if(!IO::FileExists(itemPath)) {
+            Fail("Embedded item: " + itemPath + " file doesn't exist! Can't save MacroPart.");
+            return "";
+        }
         IO::File file(itemPath);
         file.Open(IO::FileMode::Read);
         auto buffer = file.Read(file.Size());

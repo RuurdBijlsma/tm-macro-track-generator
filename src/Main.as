@@ -17,6 +17,8 @@
 // * option to optimize backtracking
 //      - remove randomness but use fancy algorithms
 
+// * in create process, button to go back to select entrance?
+
 // * improve performance
 //      - Use connection type for connection check instead of can place
 //      - profile whats taking longest

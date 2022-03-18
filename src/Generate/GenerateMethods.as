@@ -14,6 +14,7 @@ dictionary@ filterReasons = null;
 bool lastGenerateFailed = false;
 bool canceled = false;
 int generatedMapDuration = 0;
+int triedParts = 0;
 string[]@ deletedParts = {};
 
 void ResetState() {
@@ -235,6 +236,7 @@ void GenerateTrack() {
     Initialize();
 
     generatedMapDuration = 0;
+    triedParts = 0;
 
     print("Found " + filteredParts.Length + " available parts after global filter is applied.");
 
@@ -392,6 +394,11 @@ bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = 
                 if(placePos is null) break;
                 print("Test start pos: " + placePos.ToPrintString());
             }
+            if(placePos is null) {
+                warn("placePos is null!, part = " + part.ID);
+                break;
+            }
+            triedParts++;
             bool canPlace = editor.PluginMapType.CanPlaceMacroblock_NoDestruction(part.macroblock, placePos.position, placePos.direction);
             // print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + generatedMapDuration);
             if(!canPlace) 

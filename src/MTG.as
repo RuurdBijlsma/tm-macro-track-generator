@@ -34,6 +34,7 @@ bool CutMap() {
     if(editor is null) return false;
     editor.PluginMapType.CopyPaste_SelectAll();
     if(editor.PluginMapType.CopyPaste_GetSelectedCoordsCount() != 0) {
+        print("Map has been cut!");
         editor.PluginMapType.CopyPaste_Cut();
         return true;
     }
@@ -79,6 +80,9 @@ DirectedPosition@ GetNorthArrowFromRelativePosition(DirectedPosition@ absPositio
 }
 
 DirectedPosition@ NorthArrowToCursor(CGameCtnMacroBlockInfo@ macroblock, DirectedPosition@ northArrow) {
+    if(macroblock.GeneratedBlockInfo is null) {
+        return null;
+    }
     auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
     if(northArrow.direction == CGameEditorPluginMap::ECardinalDirections::North) {
         return northArrow;
