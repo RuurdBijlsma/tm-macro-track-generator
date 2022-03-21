@@ -1,24 +1,21 @@
 //todo
 // -------------- priority high: ----------------
-// * auto import items/download blocks from macroparts
-// * On startup:
-//      - Check if detault macroparts are there, if not put macroparts into blocks folder, and put embedded items in items folder
-//      - Check for every macropart in blocks folder if the embedded items exist in the items folder
+// * show in parts ui how many parts can connect to exit/entrance so you can see what you need more parts of
+// * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
+// * parts list is laggy
 
 // -------------- priority low: ---------------
 // * Give warning when creating that non-block mode placed items can end up intersecting 
 //      so dont make large section with just ghost blocks or items, 
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
-// * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
+// * in create process, button to go back to select entrance?
+
 
 // * Scenery generator? 
-// * parts list is laggy
 
 // * option to optimize backtracking
 //      - remove randomness but use fancy algorithms
-
-// * in create process, button to go back to select entrance?
 
 // * improve performance
 //      - Use connection type for connection check instead of can place
