@@ -57,6 +57,18 @@ void RenderInterface() {
             GenOptions::disabledFolders = {};
             GenOptions::OnChange();
         }
+        UI::SameLine();
+        if(TMUI::Button(Icons::Random)) {
+            GenOptions::disabledParts = {};
+            GenOptions::disabledFolders = {};
+            for(uint i = 0; i < Generate::allParts.Length; i++) {
+                auto part = Generate::allParts[i];
+                if(Random::Float() > 0.6) {
+                    GenOptions::disabledParts.InsertLast(part.ID);
+                }
+            }
+            GenOptions::OnChange();
+        }
         string folder = "";
         if(UI::BeginTable("parts", (Generate::usedParts is null) ? 3 : 4)) {
             auto editor = Editor();

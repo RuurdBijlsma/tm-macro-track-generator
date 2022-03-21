@@ -13,6 +13,7 @@
 // * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
 
 // * Scenery generator? 
+// * parts list is laggy
 
 // * option to optimize backtracking
 //      - remove randomness but use fancy algorithms
@@ -32,6 +33,7 @@ bool isInEditor = false;
 
 void Main() {
     Fonts::Load();
+    MTG::CheckMacroParts();
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     GenOptions::Initialize();
@@ -39,13 +41,13 @@ void Main() {
 
 void Render() {
     if(!Fonts::loaded) return;
+    TMDialog::Render();
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     auto driving = editor.PluginMapType.IsTesting || editor.PluginMapType.IsValidating;
     if(!driving){
         Create::RenderNativeUI();
         Generate::RenderInterface();
-        TMDialog::Render();
     }
 }
 

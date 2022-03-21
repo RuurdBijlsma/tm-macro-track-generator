@@ -99,7 +99,6 @@ void CheckEmbeddedItems() {
                     missingBlock = true;
                 if(missingItems.Find(relItemPath) == -1) {
                     auto buffer = part.GetItemBuffer(relItemPath);
-                    print("Buffer size: " + buffer.GetSize());
                     if(buffer.GetSize() == 0) {
                         warn("Invalid buffer! Can't get item: " + relItemPath);
                         continue;
@@ -109,10 +108,9 @@ void CheckEmbeddedItems() {
                     auto folderParts = relItemPath.Split("\\");
                     auto folder = relItemPath.SubStr(0, relItemPath.Length - folderParts[folderParts.Length - 1].Length);
                     // print("Folder: " + folder);
-                    print("Buffer Size: " + buffer.GetSize());
                     // create folders recursive
                     MTG::CreateFolderRecursive(MTG::GetItemsFolder(), folder);
-                    print("ItemPath: " + itemPath);
+                    print("Part ID: " + part.ID + ", ItemPath: " + itemPath);
                     IO::File f(itemPath);
                     // print("Filemode: " + tostring(f.GetMode()));
                     f.Open(IO::FileMode::Write);

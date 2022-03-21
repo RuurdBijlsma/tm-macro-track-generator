@@ -1,0 +1,1 @@
+Get-ChildItem -Recurse ".\MacroParts\" -Name -File -Include *.Gbx | Out-File "MacroParts/index.txt" -Encoding ascii

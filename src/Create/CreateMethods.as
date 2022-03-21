@@ -183,6 +183,7 @@ bool OnMouseButton(bool down, int button, int x, int y) {
 
         // Detect items in macroblock
         auto anchoredObjects = editor.Challenge.AnchoredObjects;
+        @partDetails.embeddedItems = {};
         for(uint i = 0; i < anchoredObjects.Length; i++) {
             auto itemPath = anchoredObjects[i].ItemModel.IdName;
             if(itemPath.ToLower().EndsWith(".item.gbx") && partDetails.embeddedItems.Find(itemPath) == -1){
@@ -251,7 +252,7 @@ void ResetState() {
 
 void CleanUp() {
     print("Cleanup called");
-    auto tempMacroblock = MTG::GetBlocksFolder() + macroPartFolder + "\\temp_MTG.Macroblock.Gbx";
+    auto tempMacroblock = MTG::GetBlocksFolder() + "Stadium\\" + macroPartFolder + "\\temp_MTG.Macroblock.Gbx";
     if(IO::FileExists(tempMacroblock)) {
         print("Clean up " + tempMacroblock);
         IO::Delete(tempMacroblock);

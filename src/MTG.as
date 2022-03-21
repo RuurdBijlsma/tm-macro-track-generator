@@ -1,5 +1,47 @@
 namespace MTG {
 
+void CheckMacroParts() {
+    auto mbsPath = MTG::GetBlocksFolder() + "Stadium\\" + macroPartFolder + "\\";
+    if(IO::FolderExists(mbsPath)){
+        return;
+    }
+    IO::CreateFolder(mbsPath);
+    // copy parts over
+    IO::FileSource indexFile("./MacroParts/index.txt");
+    while(true) {
+        auto line = indexFile.ReadLine();
+        if(line == "") break;
+        try {
+            IO::FileSource partFile = IO::FileSource(".\\MacroParts\\" + line);
+            auto buffer = partFile.Read(partFile.Size());
+            auto lineParts = line.Split("\\");
+            auto fileType = lineParts[0];
+            auto relFile = line.SubStr(fileType.Length);
+            print("RelFile: " + relFile);
+            auto relFolder = relFile.SubStr(0, relFile.Length - lineParts[lineParts.Length - 1].Length);
+            if(fileType == "Parts") {
+                print("Copying MacroPart from zip: " + relFile);
+                if(!IO::FolderExists(mbsPath + relFolder))
+                    CreateFolderRecursive(mbsPath, relFolder);
+                IO::File toFile(mbsPath + relFile, IO::FileMode::Write);
+                toFile.Write(buffer);
+                toFile.Close();
+            } else if(fileType == "Items") {
+                print("Copying Item from zip: " + relFile);
+                auto itemsPath = GetItemsFolder();
+                if(!IO::FolderExists(itemsPath + relFolder))
+                    CreateFolderRecursive(itemsPath, relFolder);
+                IO::File toFile(itemsPath + relFile, IO::FileMode::Write);
+                toFile.Write(buffer);
+                toFile.Close();
+            }
+        } catch {
+            warn("Invalid part in parts-index.txt: " + line);
+        }
+    }
+    TMDialog::Alert("You need to restart the game before being able to generate random tracks.", "Included parts must be loaded into the editor, which requires a restart.");
+}
+
 MacroPart@ PartFromID(string ID) {
     for(uint i = 0; i < Generate::allParts.Length; i++) {
         if(Generate::allParts[i].ID == ID) {
