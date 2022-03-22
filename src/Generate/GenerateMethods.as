@@ -11,16 +11,23 @@ int finishCount = 0;
 int usedPartsCount = 0;
 dictionary@ usedParts = null;
 dictionary@ filterReasons = null;
+dictionary@ partsEntranceConnections = null;
+dictionary@ partsExitConnections = null;
 bool lastGenerateFailed = false;
 bool canceled = false;
 int generatedMapDuration = 0;
 int triedParts = 0;
 string[]@ deletedParts = {};
+dictionary@ folders = null;
+CGameEditorPluginMap::EMapElemColor trackColor;
 
 void ResetState() {
     @allParts = {};
     @filteredParts = {};
+    @folders = {};
     @usedParts = null;
+    @partsEntranceConnections = null;
+    @partsExitConnections = null;
     @filterReasons = null;
     @deletedParts = {};
 }
@@ -29,6 +36,9 @@ void Initialize() {
     @allParts = {};
     @filteredParts = {};
     @usedParts = null;
+    @partsEntranceConnections = null;
+    @partsExitConnections = null;
+    @folders = {};
     @allParts = GetMacroParts();
     CheckEmbeddedItems();
     UpdateFilteredParts();
@@ -54,6 +64,14 @@ MacroPart@[] ExploreNode(CGameCtnArticleNodeDirectory@ node, string folder = "")
             if(deletedParts.Find(macroblock.IdName) != -1) continue;
             auto macroPart = MacroPart::FromMacroblock(macroblock);
             if(macroPart is null) continue;
+            
+            MacroPart@[]@ parts = {};
+            if(!folders.Exists(folder)) {
+                print("Adding folder: " + folder + ", key count: " + folders.GetKeys().Length);
+                folders.Set(folder, parts);
+            } 
+            @parts = cast<MacroPart@[]@>(folders[folder]);
+            parts.InsertLast(macroPart);
             macroPart.folder = folder;
             macroParts.InsertLast(macroPart);
         }
@@ -161,6 +179,8 @@ MacroPart@[]@ GlobalFilterParts() {
     @usedParts = GetUsedPartsDictionary();
     usedPartsCount = 0;
     @filterReasons = GetFilterReasonsDictionary();
+    @partsEntranceConnections = GetConnectionsDictionary();
+    @partsExitConnections = GetConnectionsDictionary();
 
     for(uint i = 0; i < allParts.Length; i++) {
         auto part = allParts[i];
@@ -265,21 +285,23 @@ MacroPart@[]@ GlobalFilterParts() {
 }
 
 bool IsUnconnectable(MacroPart@ part, MacroPart@[]@ parts) {
-        bool canConnectToOthers = false;
-        bool othersCanConnectTo = false;
+        int entrance = 0;
+        int exit = 0;
         // todo, create dictionary here of part->how many connection options that part has
         // for fancy algorithms
         for(uint j = 0; j < parts.Length; j++) {
             auto otherPart = parts[j];
-            if(part.type == EPartType::Finish || (!canConnectToOthers && CanPartConnect(part, otherPart))) 
-                canConnectToOthers = true;
-            if(part.type == EPartType::Start || (!othersCanConnectTo && CanPartConnect(otherPart, part))) 
-                othersCanConnectTo = true;
-            if(canConnectToOthers && othersCanConnectTo)
-                break;
+            if(part.type == EPartType::Finish || CanPartConnect(part, otherPart))
+                exit++;
+            if(part.type == EPartType::Start || CanPartConnect(otherPart, part))
+                entrance++;
+            // if(canConnectToOthers && othersCanConnectTo)
+            //     break;
         }
+        partsEntranceConnections[part.ID] = entrance;
+        partsExitConnections[part.ID] = exit;
         // if no other part (including itsself) can connect to this part, then filter it out
-        return !canConnectToOthers || !othersCanConnectTo;
+        return entrance == 0 || exit == 0;
 }
 
 void UpdateFilteredParts() {
@@ -302,6 +324,12 @@ void GenerateTrack() {
     Random::seedEnabled = GenOptions::useSeed;
     if(GenOptions::useSeed)
         Random::SetSeed(GenOptions::seed);
+
+    if(GenOptions::color == 6) { // random
+        trackColor = CGameEditorPluginMap::EMapElemColor(availableColors[Random::Int(0, availableColors.Length)]);
+    } else {
+        trackColor = CGameEditorPluginMap::EMapElemColor(GenOptions::color);
+    }
 
     isGenerating = true;
     Initialize();
@@ -358,6 +386,14 @@ dictionary GetUsedPartsDictionary() {
     return result;
 }
 
+dictionary GetConnectionsDictionary() {
+    dictionary result;
+    for(uint i = 0; i < allParts.Length; i++) {
+        result.Set(allParts[i].ID, 0);
+    }
+    return result;
+}
+
 MacroPart@[]@ FilterParts(MacroPart@ previousPart, const EPartType &in type) {
     MacroPart@[]@ filtered = {};
     for(uint i = 0; i < filteredParts.Length; i++) {
@@ -398,10 +434,10 @@ bool Place(MacroPart@ part, DirectedPosition@ placePos) {
     bool placed;
     if(GenOptions::forceColor) {
         editor.PluginMapType.ForceMacroblockColor = true;
-        auto color = GenOptions::color;
+        auto color = trackColor;
         if(GenOptions::autoColoring) {
             auto percentage = Math::Clamp(float(generatedMapDuration) / float(GenOptions::desiredMapLength), 0, .999999);
-            color = availableColors[1 + int((availableColors.Length - 1) * percentage)];
+            color = CGameEditorPluginMap::EMapElemColor(availableColors[1 + int((availableColors.Length - 2) * percentage)]);
         }
         editor.PluginMapType.NextMapElemColor = color;
     } else {
@@ -443,7 +479,7 @@ bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = 
     if(connectPoint is null) {
         type = EPartType::Start;
     } else {
-        type = generatedMapDuration + 7 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
+        type = generatedMapDuration + 3 > GenOptions::desiredMapLength ? EPartType::Finish: EPartType::Part;
     }
     auto possibleParts = FilterParts(previousPart, type);
     // print("possible parts length: " + possibleParts.Length);
@@ -463,7 +499,6 @@ bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = 
             if(type == EPartType::Start) {
                 @placePos = starts.Next();
                 if(placePos is null) break;
-                print("Test start pos: " + placePos.ToPrintString());
             }
             if(placePos is null) {
                 warn("placePos is null!, part = " + part.ID);

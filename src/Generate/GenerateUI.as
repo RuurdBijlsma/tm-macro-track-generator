@@ -1,6 +1,6 @@
 namespace Generate {
-// bool windowOpen = IsDevMode();
-bool windowOpen = false;
+bool windowOpen = IsDevMode();
+// bool windowOpen = false;
 int selectedTabIndex = 0;
 
 void RenderInterface() {
@@ -128,7 +128,7 @@ void RenderGenerationOptions() {
     TMUI::TextDisabled("The generation process is much slower when animating.");
     GenOptions::airMode = !TMUI::Checkbox("Add wood supports", !GenOptions::airMode);
     TMUI::TextDisabled("Track generation is more restricted with wood supports, because they can get in the way.");
-    GenOptions::desiredMapLength = UI::SliderInt("Map length (seconds)", GenOptions::desiredMapLength, 10, 3000);
+    GenOptions::desiredMapLength = UI::SliderInt("Map length (seconds)", GenOptions::desiredMapLength, 10, maxTrackLength);
     // GenOptions::desiredMapLength = Math::Clamp(UI::InputInt("Map length (seconds)", GenOptions::desiredMapLength, 10), 0, 3000);
 
     GenOptions::clearMap = TMUI::Checkbox("Clear map before generating", GenOptions::clearMap);
@@ -139,16 +139,17 @@ void RenderGenerationOptions() {
         if(!GenOptions::autoColoring) {
             UI::NewLine();
             for(uint i = 0; i < availableColors.Length; i++) {
-                auto color = availableColors[i];
                 if(i != 0) UI::SameLine();
                 UI::PushStyleColor(UI::Col::CheckMark, vec4(1, 1, 1, 1));
                 UI::PushStyleColor(UI::Col::FrameBg, colorVecs[i] * vec4(.8, .8, .8, .8));
                 UI::PushStyleColor(UI::Col::FrameBgHovered, colorVecs[i] * vec4(.8, .8, .8, .8));
                 UI::PushStyleColor(UI::Col::FrameBgActive, colorVecs[i] * vec4(1, 1, 1, .8));
 
+                auto color = availableColors[i];
                 UI::PushStyleColor(UI::Col::Border, GenOptions::color == color ? vec4(1, 1, 1, 1) : vec4(1, 1, 1, 0.2));
                 UI::PushStyleVar(UI::StyleVar::FrameBorderSize, 3);
                 UI::PushStyleVar(UI::StyleVar::FrameRounding, 20);
+
                 if(UI::Checkbox("##color" + i, GenOptions::color == color)) {
                     GenOptions::color = color;
                 }

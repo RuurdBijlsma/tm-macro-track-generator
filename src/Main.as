@@ -1,8 +1,9 @@
 //todo
 // -------------- priority high: ----------------
-// * show in parts ui how many parts can connect to exit/entrance so you can see what you need more parts of
+// * crash when leaving editor
+// * media tracker resets state
+// * refresh not called after reset to default filters?
 // * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
-// * parts list is laggy
 
 // -------------- priority low: ---------------
 // * Give warning when creating that non-block mode placed items can end up intersecting 
@@ -10,7 +11,6 @@
 //      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
 // * in create process, button to go back to select entrance?
-
 
 // * Scenery generator? 
 

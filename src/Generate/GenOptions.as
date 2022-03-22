@@ -4,13 +4,14 @@ enum EReuse {
     NoReuse
 };
 EReuse[] availableReuses = {EReuse::Reuse, EReuse::PreferNoReuse, EReuse::NoReuse};
-CGameEditorPluginMap::EMapElemColor[] availableColors = {
-    CGameEditorPluginMap::EMapElemColor::Default, 
-    CGameEditorPluginMap::EMapElemColor::White,
-    CGameEditorPluginMap::EMapElemColor::Green,
-    CGameEditorPluginMap::EMapElemColor::Blue,
-    CGameEditorPluginMap::EMapElemColor::Red,
-    CGameEditorPluginMap::EMapElemColor::Black
+int[] availableColors = {
+    0, //Default
+    1, //White
+    2, //Green
+    3, //Blue
+    4, //Red
+    5, //Black
+    6 //Random
 };
 vec4[]@ colorVecs = {
     vec4(.5, .5, .5, 1),
@@ -18,7 +19,8 @@ vec4[]@ colorVecs = {
     vec4(0, 1, 0, 1),
     vec4(0, 0, 1, 1),
     vec4(1, 0, 0, 1),
-    vec4(0, 0, 0, 1)
+    vec4(0, 0, 0, 1),
+    vec4(1, 1, 0, 1)
 };
 
 
@@ -73,9 +75,9 @@ void set_forceColor(bool v) {
         _forceColor = v;
     }
 }
-CGameEditorPluginMap::EMapElemColor _color = CGameEditorPluginMap::EMapElemColor::Black;
-CGameEditorPluginMap::EMapElemColor get_color(){return _color;}
-void set_color(CGameEditorPluginMap::EMapElemColor v) {
+int _color = 5;
+int get_color(){return _color;}
+void set_color(int v) {
     if(_color != v) {
         OnChange();
         _color = v;
@@ -289,8 +291,7 @@ void FromJson(Json::Value obj) {
     startHeight = obj["startHeight"];
     autoColoring = obj["autoColoring"];
     forceColor = obj["forceColor"];
-    int intColor = obj["color"];
-    color = CGameEditorPluginMap::EMapElemColor(intColor);
+    color = obj["color"];
     useSeed = obj["useSeed"];
     seed = obj["seed"];
     animate = obj["animate"];

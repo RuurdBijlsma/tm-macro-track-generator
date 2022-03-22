@@ -1,5 +1,10 @@
 namespace Parts {
 
+class PartFolderTuple {
+    MacroPart@ part = null;
+    string folder = "";
+};
+
 MacroPart@ selectedPart = null;
 
 void PickMacroblock(CGameCtnMacroBlockInfo@ macroblock) {
@@ -20,6 +25,8 @@ void DisableFolder(const string &in folder, int startIndex = 0) {
             break;
         }
     }
+    if(folder != "" && GenOptions::disabledFolders.Find(folder) == -1)
+        GenOptions::disabledFolders.InsertLast(folder);
 }
 
 void EnableFolder(const string &in folder) {
@@ -31,6 +38,9 @@ void EnableFolder(const string &in folder) {
             GenOptions::disabledParts.RemoveAt(i);
         }
     }
+    auto index = GenOptions::disabledFolders.Find(folder);
+    if(index != -1)
+        GenOptions::disabledFolders.RemoveAt(index);
 }
 
 void RenderInterface() {
@@ -40,16 +50,12 @@ void RenderInterface() {
         }
         UI::SameLine();
         if(TMUI::Button("Disable all")) {
-            string folder = "";
-            for(uint i = 0; i < Generate::allParts.Length; i++) {
-                auto part = Generate::allParts[i];
-                if(part.folder != folder) {
-                    folder = part.folder;
-                    DisableFolder(folder, i);
-                    GenOptions::disabledFolders.InsertLast(folder);
-                }
-                GenOptions::OnChange();
+            auto folders = Generate::folders.GetKeys();
+            for(uint i = 0; i < folders.Length; i++) {
+                auto folder = folders[i];
+                DisableFolder(folder, i);
             }
+            GenOptions::OnChange();
         }
         UI::SameLine();
         if(TMUI::Button("Enable all")) {
@@ -69,28 +75,57 @@ void RenderInterface() {
             }
             GenOptions::OnChange();
         }
-        string folder = "";
-        if(UI::BeginTable("parts", (Generate::usedParts is null) ? 3 : 4)) {
+        if(UI::BeginTable("parts", 4)) {
             auto editor = Editor();
             if(editor is null || editor.PluginMapType is null) return;
-            if(Generate::usedParts !is null)
-                UI::TableSetupColumn("##useCount", UI::TableColumnFlags::WidthFixed, 5);
+            UI::TableSetupColumn("##useCount", UI::TableColumnFlags::WidthFixed, partsListInfo == PartsListInfo::Connectivity ? 45 : 5);
             UI::TableSetupColumn("##name", UI::TableColumnFlags::WidthStretch, 1);
             UI::TableSetupColumn("##filtered", UI::TableColumnFlags::WidthFixed, 10);
             UI::TableSetupColumn("##actions", UI::TableColumnFlags::WidthFixed, 160);
             // UI::TableHeadersRow();
-            for(uint i = 0; i < Generate::allParts.Length; i++) {
-                UI::PushID("partRow" + i);
-                auto part = Generate::allParts[i];
-                if(part.folder != folder) {
-                    folder = part.folder;
-                    UI::TableNextRow();
-                    RenderSeperatorRow(folder);
+
+            PartFolderTuple@[]@ rows = {};
+            auto folders = Generate::folders.GetKeys();
+            auto rootIndex = folders.Find("");
+            if(rootIndex != -1) {
+                // Show parts not in folder first
+                folders.RemoveAt(rootIndex);
+                folders.InsertAt(0, "");
+            }
+            for(uint i = 0; i < folders.Length; i++) {
+
+                auto folder = folders[i];
+                MacroPart@[]@ parts;
+                if(Generate::folders.Get(folder, @parts)) {
+                    if(folder != "") {
+                        auto folderTup = PartFolderTuple();
+                        folderTup.folder = folder;
+                        rows.InsertLast(folderTup);
+                    }
+
+                    for(uint j = 0; j < parts.Length; j++) {
+                        auto partTup = PartFolderTuple();
+                        @partTup.part = parts[j];
+                        rows.InsertLast(partTup);
+                    }
                 }
-                auto selected = editor.CurrentMacroBlockInfo !is null && part.ID == editor.CurrentMacroBlockInfo.IdName;
-                UI::TableNextRow();
-                RenderPartRow(part, selected);
-                UI::PopID();
+            }
+
+            UI::ListClipper clipper(rows.Length);
+            while(clipper.Step()) {
+                for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
+                    UI::PushID("partRow" + i);
+                    auto tup = rows[i];
+                    if(tup.part is null) {
+                        UI::TableNextRow();
+                        RenderSeperatorRow(tup.folder);
+                    } else {
+                        auto selected = editor.CurrentMacroBlockInfo !is null && tup.part.ID == editor.CurrentMacroBlockInfo.IdName;
+                        UI::TableNextRow();
+                        RenderPartRow(tup.part, selected);
+                    }
+                    UI::PopID();
+                }
             }
             UI::EndTable();
         }
@@ -113,6 +148,21 @@ void EditEntranceExit(ref@ partRef) {
     Create::EditEntranceExit();
 }
 
+void RenderConnectivity(MacroPart@ part, bool short = false) {
+    string prefix = short ? "" : "Connectivity: ";
+    if(part.type == EPartType::Finish) 
+        UI::Text(prefix + int(Generate::partsEntranceConnections[part.ID]) + " "+Icons::Forward);
+    else if(part.type == EPartType::Start) 
+        UI::Text(prefix + Icons::Forward+" " + int(Generate::partsExitConnections[part.ID]));
+    else
+        UI::Text(prefix + int(Generate::partsEntranceConnections[part.ID]) + " "+Icons::Forward+" " + int(Generate::partsExitConnections[part.ID]));
+    if(UI::IsItemHovered()) {
+        UI::BeginTooltip();
+        UI::Text("The amount of parts that can connect before and after this part.");
+        UI::EndTooltip();
+    }
+}
+
 void RenderPart(MacroPart@ part) {
     UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
     if(TMUI::Button("Back to list")) {
@@ -123,6 +173,10 @@ void RenderPart(MacroPart@ part) {
         PickMacroblock(part.macroblock);
     }
     TMUI::TextDisabled(part.ID);
+
+    if(Generate::partsEntranceConnections.Exists(part.ID) && Generate::partsExitConnections.Exists(part.ID)) {
+        RenderConnectivity(part);
+    }
 
     PartEditor(part);
 
@@ -149,8 +203,7 @@ void RenderPart(MacroPart@ part) {
 }
 
 void RenderSeperatorRow(const string &in folder) {
-    if(Generate::usedParts !is null)
-        UI::TableNextColumn();
+    UI::TableNextColumn();
 
     UI::TableNextColumn();
     UI::Separator();
@@ -168,10 +221,8 @@ void RenderSeperatorRow(const string &in folder) {
         print("Toggle");
         if(isInList) {
             EnableFolder(folder);
-            GenOptions::disabledFolders.RemoveAt(listIndex);
         } else {
             DisableFolder(folder);
-            GenOptions::disabledFolders.InsertLast(folder);
         }
         GenOptions::OnChange();
     }
@@ -190,12 +241,12 @@ void RenderPartRow(MacroPart@ part, bool selected) {
         reason = string(Generate::filterReasons[part.ID]);
     }
 
-    if(Generate::usedParts !is null) { 
+    UI::TableNextColumn();
+    if(partsListInfo == PartsListInfo::UsedCount && Generate::usedParts !is null) { 
         UI::PushStyleVar(UI::StyleVar::ItemInnerSpacing, vec2(0, 0));
         UI::PushStyleVar(UI::StyleVar::ItemSpacing, vec2(0, 0));
         UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(0, 0));
         int useCount = int(Generate::usedParts[part.ID]);
-        UI::TableNextColumn();
         TMUI::TextDisabled(tostring(useCount));
         UI::PopStyleVar(3);
         if(UI::IsItemHovered()) {
@@ -203,6 +254,12 @@ void RenderPartRow(MacroPart@ part, bool selected) {
             UI::Text("Use count in previously generated track");
             UI::EndTooltip();
         }
+    } else if(partsListInfo == PartsListInfo::Connectivity && Generate::partsEntranceConnections !is null && Generate::partsExitConnections !is null) {
+        UI::PushStyleVar(UI::StyleVar::ItemInnerSpacing, vec2(0, 0));
+        UI::PushStyleVar(UI::StyleVar::ItemSpacing, vec2(0, 0));
+        UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(0, 0));
+        RenderConnectivity(part, true);
+        UI::PopStyleVar(3);
     }
 
     UI::TableNextColumn();
@@ -235,6 +292,7 @@ void RenderPartRow(MacroPart@ part, bool selected) {
     }
     
     UI::TableNextColumn();
+
     UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(4, 5));
     auto listIndex = GenOptions::disabledParts.Find(part.ID);
     bool isInList = listIndex != -1;
@@ -254,6 +312,7 @@ void RenderPartRow(MacroPart@ part, bool selected) {
         UI::EndTooltip();
     }
     UI::SameLine();
+    
     if(UI::Button(Icons::Eyedropper)) {
         PickMacroblock(part.macroblock);
     }
