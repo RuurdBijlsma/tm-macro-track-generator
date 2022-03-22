@@ -17,6 +17,8 @@
 // * option to optimize backtracking
 //      - remove randomness but use fancy algorithms
 
+// * soms gaat ie stuk op saving macroblock, dan moet je temp_mtg verwijderen
+
 // * improve performance
 //      - Use connection type for connection check instead of can place
 //      - profile whats taking longest

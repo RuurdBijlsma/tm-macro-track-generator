@@ -19,6 +19,7 @@ int generatedMapDuration = 0;
 int triedParts = 0;
 string[]@ deletedParts = {};
 dictionary@ folders = null;
+Parts::PartFolderTuple@[] rows = {};
 CGameEditorPluginMap::EMapElemColor trackColor;
 
 void ResetState() {
@@ -30,6 +31,7 @@ void ResetState() {
     @partsExitConnections = null;
     @filterReasons = null;
     @deletedParts = {};
+    rows = {};
 }
 
 void Initialize() {
@@ -42,6 +44,35 @@ void Initialize() {
     @allParts = GetMacroParts();
     CheckEmbeddedItems();
     UpdateFilteredParts();
+    CreatePartsListRows();
+}
+
+void CreatePartsListRows() {
+    rows = {};
+    auto folders = Generate::folders.GetKeys();
+    auto rootIndex = folders.Find("");
+    if(rootIndex != -1) {
+        // Show parts not in folder first
+        folders.RemoveAt(rootIndex);
+        folders.InsertAt(0, "");
+    }
+    for(uint i = 0; i < folders.Length; i++) {
+        auto folder = folders[i];
+        MacroPart@[]@ parts;
+        if(Generate::folders.Get(folder, @parts)) {
+            if(folder != "") {
+                auto folderTup = Parts::PartFolderTuple();
+                folderTup.folder = folder;
+                rows.InsertLast(folderTup);
+            }
+
+            for(uint j = 0; j < parts.Length; j++) {
+                auto partTup = Parts::PartFolderTuple();
+                @partTup.part = parts[j];
+                rows.InsertLast(partTup);
+            }
+        }
+    }
 }
 
 MacroPart@[] ExploreNode(CGameCtnArticleNodeDirectory@ node, string folder = "") {

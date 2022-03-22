@@ -84,38 +84,11 @@ void RenderInterface() {
             UI::TableSetupColumn("##actions", UI::TableColumnFlags::WidthFixed, 160);
             // UI::TableHeadersRow();
 
-            PartFolderTuple@[]@ rows = {};
-            auto folders = Generate::folders.GetKeys();
-            auto rootIndex = folders.Find("");
-            if(rootIndex != -1) {
-                // Show parts not in folder first
-                folders.RemoveAt(rootIndex);
-                folders.InsertAt(0, "");
-            }
-            for(uint i = 0; i < folders.Length; i++) {
-
-                auto folder = folders[i];
-                MacroPart@[]@ parts;
-                if(Generate::folders.Get(folder, @parts)) {
-                    if(folder != "") {
-                        auto folderTup = PartFolderTuple();
-                        folderTup.folder = folder;
-                        rows.InsertLast(folderTup);
-                    }
-
-                    for(uint j = 0; j < parts.Length; j++) {
-                        auto partTup = PartFolderTuple();
-                        @partTup.part = parts[j];
-                        rows.InsertLast(partTup);
-                    }
-                }
-            }
-
-            UI::ListClipper clipper(rows.Length);
+            UI::ListClipper clipper(Generate::rows.Length);
             while(clipper.Step()) {
                 for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
                     UI::PushID("partRow" + i);
-                    auto tup = rows[i];
+                    auto tup = Generate::rows[i];
                     if(tup.part is null) {
                         UI::TableNextRow();
                         RenderSeperatorRow(tup.folder);
