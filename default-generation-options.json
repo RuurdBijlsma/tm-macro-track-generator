@@ -16,7 +16,7 @@
     "allowCustomItems": true,
     "allowCustomBlocks": true,
     "considerSpeed": true,
-    "maxSpeedVariation": 75,
+    "maxSpeedVariation": 60,
     "minSpeed": 0,
     "maxSpeed": 1000,
     "desiredMapLength": 60,
@@ -27,5 +27,6 @@
     "clearMap": true,
     "color": 5,
     "startHeight": 0.1,
-    "noRepeats": true
+    "noRepeats": true,
+    "ensureTrackIntegrity": false
 }

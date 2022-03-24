@@ -35,6 +35,14 @@ string[]@ disabledFolders = {};
 EDifficulty[]@ difficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
 
 
+bool _ensureTrackIntegrity = false;
+bool get_ensureTrackIntegrity(){return _ensureTrackIntegrity;}
+void set_ensureTrackIntegrity(bool v) {
+    if(_ensureTrackIntegrity != v) {
+        OnChange();
+        _ensureTrackIntegrity = v;
+    }
+}
 bool _noRepeats = true;
 bool get_noRepeats(){return _noRepeats;}
 void set_noRepeats(bool v) {
@@ -240,6 +248,7 @@ Json::Value ToJson() {
     for(uint i = 0; i < disabledFolders.Length; i++)
         obj["disabledFolders"].Add(disabledFolders[i]);
         
+    obj["ensureTrackIntegrity"] = ensureTrackIntegrity;
     obj["noRepeats"] = noRepeats;
     obj["clearMap"] = clearMap;
     obj["startHeight"] = startHeight;
@@ -286,6 +295,7 @@ void FromJson(Json::Value obj) {
     for(uint i = 0; i < obj["disabledFolders"].Length; i++) 
         disabledFolders.InsertLast(obj["disabledFolders"][i]);
 
+    ensureTrackIntegrity = obj["ensureTrackIntegrity"];
     noRepeats = obj["noRepeats"];
     clearMap = obj["clearMap"];
     startHeight = obj["startHeight"];

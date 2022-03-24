@@ -77,7 +77,7 @@ void RenderGenerateTrack() {
         TMUI::TextDisabled(Generate::finishCount + " finish parts");
 
         if(Generate::lastGenerateFailed) {
-            UI::Text(Icons::ExclamationTriangle + " Track failed to generate!");
+            UI::Text(Icons::ExclamationTriangle + " " + Generate::generateFailureReason);
         } else {
             UI::Text("");
         }
@@ -157,6 +157,12 @@ void RenderGenerationOptions() {
                 UI::PopStyleColor(5);
             }
         }
+    }
+    GenOptions::ensureTrackIntegrity = TMUI::Checkbox("Prevent bug from deleting blocks in the track", GenOptions::ensureTrackIntegrity);
+    if(UI::IsItemHovered()) {
+        UI::BeginTooltip();
+        UI::Text("There is a map editor bug where placing a macroblock can destroy existing blocks. This option makes sure any destroyed blocks are detected in time and fixed, this option is usually only relevant when creating very long spaghetti maps, and it can cause track generation to become up to 10x slower.");
+        UI::EndTooltip();
     }
     UI::PopTextWrapPos();
 }

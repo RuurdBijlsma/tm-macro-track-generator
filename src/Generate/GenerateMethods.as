@@ -1,8 +1,20 @@
 namespace Generate {
 
+class PlacedPart{
+    MacroPart@ part; DirectedPosition@ position; int3 min; int3 max;
+    PlacedPart(MacroPart@ part, DirectedPosition@ position, const int3 &in min, const int3 &in max) {
+        @this.part = part;
+        @this.position = position;
+        this.min = min;
+        this.max = max;
+    }
+};
+
+string generateFailureReason = "";
 bool initialized = false;
 MacroPart@[]@ allParts = {};
 MacroPart@[]@ filteredParts = {};
+PlacedPart@[]@ generatedTrack = {};
 bool isGenerating = false;
 int lastYield = 0;
 int startCount = 0;
@@ -20,7 +32,6 @@ int triedParts = 0;
 string[]@ deletedParts = {};
 dictionary@ folders = null;
 Parts::PartFolderTuple@[] rows = {};
-CGameEditorPluginMap::EMapElemColor trackColor;
 
 void ResetState() {
     @allParts = {};
@@ -29,6 +40,7 @@ void ResetState() {
     @usedParts = null;
     @partsEntranceConnections = null;
     @partsExitConnections = null;
+    @generatedTrack = {};
     @filterReasons = null;
     @deletedParts = {};
     rows = {};
@@ -40,6 +52,7 @@ void Initialize() {
     @usedParts = null;
     @partsEntranceConnections = null;
     @partsExitConnections = null;
+    @generatedTrack = {};
     @folders = {};
     @allParts = GetMacroParts();
     CheckEmbeddedItems();
@@ -342,25 +355,23 @@ void UpdateFilteredParts() {
     }
 }
 
+CGameCtnEditorCommon@ editorHandle = null;
 void GenerateTrack() {
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return;
     if(isGenerating) return;
+    auto now = Time::Now;
 
     if(allParts.Length == 0) {
         warn("No MacroParts found to generate a track with!");
         return;
     }
+    lastGenerateFailed = false;
+    @editorHandle = editor;
     
     Random::seedEnabled = GenOptions::useSeed;
     if(GenOptions::useSeed)
         Random::SetSeed(GenOptions::seed);
-
-    if(GenOptions::color == 6) { // random
-        trackColor = CGameEditorPluginMap::EMapElemColor(availableColors[Random::Int(0, availableColors.Length)]);
-    } else {
-        trackColor = CGameEditorPluginMap::EMapElemColor(GenOptions::color);
-    }
 
     isGenerating = true;
     Initialize();
@@ -376,13 +387,23 @@ void GenerateTrack() {
 
     lastYield = Time::Now;
 
-    auto forceBefore = editor.PluginMapType.ForceMacroblockColor;
-    auto colorBefore = editor.PluginMapType.NextMapElemColor;
 
     bool success = PlacePart();
-
-    editor.PluginMapType.ForceMacroblockColor = forceBefore;
-    editor.PluginMapType.NextMapElemColor = colorBefore;
+    if(success) {
+        auto forceBefore = editor.PluginMapType.ForceMacroblockColor;
+        auto colorBefore = editor.PluginMapType.NextMapElemColor;
+        // color map and check for deleted blocks
+        bool valid = RePlaceTrack();
+        if(!valid) {
+            generateFailureReason = "Some blocks along the route were destroyed.";
+            success = false;
+            Warn("Some blocks along the route were accidentally destroyed.");
+        }
+        editor.PluginMapType.ForceMacroblockColor = forceBefore;
+        editor.PluginMapType.NextMapElemColor = colorBefore;
+    } else {
+        generateFailureReason = "Track failed to generate!";
+    }
 
     if(canceled) {
         print("was canceled");
@@ -395,6 +416,9 @@ void GenerateTrack() {
     }
 
     isGenerating = false;
+    @editorHandle = null;
+
+    print("Generating track took " + (Time::Now - now) + "ms");
 }
 
 dictionary GetFilterReasonsDictionary() {
@@ -460,26 +484,14 @@ bool CanPartConnect(MacroPart@ partA, MacroPart@ partB) {
 }
 
 bool Place(MacroPart@ part, DirectedPosition@ placePos) {
-    auto editor = Editor();
-    if(editor is null || editor.PluginMapType is null) return false;
     bool placed;
-    if(GenOptions::forceColor) {
-        editor.PluginMapType.ForceMacroblockColor = true;
-        auto color = trackColor;
-        if(GenOptions::autoColoring) {
-            auto percentage = Math::Clamp(float(generatedMapDuration) / float(GenOptions::desiredMapLength), 0, .999999);
-            color = CGameEditorPluginMap::EMapElemColor(availableColors[1 + int((availableColors.Length - 2) * percentage)]);
-        }
-        editor.PluginMapType.NextMapElemColor = color;
-    } else {
-        editor.PluginMapType.ForceMacroblockColor = false;
-    }
     if(GenOptions::airMode) {
-        placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
+        placed = editorHandle.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
     } else {
-        placed = editor.PluginMapType.PlaceMacroblock(part.macroblock, placePos.position, placePos.direction);
+        placed = editorHandle.PluginMapType.PlaceMacroblock_NoTerrain_NoUnvalidate(part.macroblock, placePos.position, placePos.direction);
     }
     if(placed) {
+        generatedTrack.InsertLast(PlacedPart(part, placePos, placePos.position, part.GetFarBound(placePos)));
         usedParts[part.ID] = int(usedParts[part.ID]) + 1;
         usedPartsCount++;
         generatedMapDuration += part.duration;
@@ -488,18 +500,16 @@ bool Place(MacroPart@ part, DirectedPosition@ placePos) {
 }
 
 void UnPlace(MacroPart@ part, DirectedPosition@ placePos) {
-    auto editor = Editor();
-    if(editor is null || editor.PluginMapType is null) return;
-    editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
-    generatedMapDuration -= part.duration;
+    editorHandle.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
+    
+    generatedTrack.RemoveLast();
     usedParts[part.ID] = int(usedParts[part.ID]) - 1;
     usedPartsCount--;
+    generatedMapDuration -= part.duration;
 }
 
 bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = null) {
     if(canceled) return false;
-    auto editor = Editor();
-    if(editor is null || editor.PluginMapType is null) return false;
     auto now = Time::Now;
     // prevent crash due to timeout
     if(GenOptions::animate || now - lastYield > 900){
@@ -536,13 +546,17 @@ bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = 
                 break;
             }
             triedParts++;
-            bool canPlace = editor.PluginMapType.CanPlaceMacroblock_NoDestruction(part.macroblock, placePos.position, placePos.direction);
-            // print("Can place " + part.name + " at " + placePos.ToPrintString() + "?: " + canPlace + ". duration = " + generatedMapDuration);
-            if(!canPlace) 
-                break;
             bool placed = Place(part, placePos);
             if(!placed)
                 break;
+            if(GenOptions::ensureTrackIntegrity) {
+                // Fix track in case it broke
+                bool valid = CheckPartPlacement(part, placePos);
+                if(!valid) { 
+                    UnPlace(part, placePos);
+                    break;
+                }
+            }
             if(type == EPartType::Finish)
                 return true;
             auto partEntrancePos = MTG::ToAbsolutePosition(part.macroblock, placePos, part.exit);
@@ -561,6 +575,98 @@ bool PlacePart(DirectedPosition@ connectPoint = null, MacroPart@ previousPart = 
     }
     
     return finished;
+}
+
+// Check for broken parts near recently placed part
+// returns true if a broken part was found and replaced
+bool CheckPartPlacement(MacroPart@ part, DirectedPosition@ placePos) {
+    auto now = Time::Now;
+    PlacedPart@[]@ intersectingParts = {};
+
+    // Unplace every block with intersecting bounding box
+    for(uint i = 0; i < generatedTrack.Length; i++) {
+        auto gt = generatedTrack[i];
+        auto intersects = MTG::IntersectsBounds(gt.min, gt.max, placePos.position, part.GetFarBound(placePos));
+        if(intersects) {
+            editorHandle.PluginMapType.RemoveMacroblock(gt.part.macroblock, gt.position.position, gt.position.direction);
+            intersectingParts.InsertLast(gt);
+            if(GenOptions::animate) yield();
+        }
+    }
+
+    // Place every block with intersecting bounding box
+    for(uint i = 0; i < intersectingParts.Length; i++) {
+        auto gt = intersectingParts[i];
+
+        bool placed;
+        if(GenOptions::airMode) {
+            placed = editorHandle.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
+        } else {
+            placed = editorHandle.PluginMapType.PlaceMacroblock_NoTerrain_NoUnvalidate(part.macroblock, placePos.position, placePos.direction);
+        }
+        if(GenOptions::animate) yield();
+        if(!placed) {
+            warn("[CHECK] Found problem while placing track part, part: " + gt.part.ID + ", pos: " + gt.position.ToString());
+            return false;
+        }
+    }
+    print("Checked "+intersectingParts.Length+" parts, " + (Time::Now - now) + "ms");
+    return true;
+}
+
+// Fix broken parts and color the track
+bool RePlaceTrack() {
+    auto now = Time::Now;
+    auto editor = Editor();
+    if(editor is null || editor.PluginMapType is null) return false;
+    if(generatedTrack.Length < 2) return false;
+
+    CGameEditorPluginMap::EMapElemColor color;
+    if(GenOptions::color == 6) { // random color
+        color = CGameEditorPluginMap::EMapElemColor(availableColors[Random::Int(0, availableColors.Length)]);
+    } else {
+        color = CGameEditorPluginMap::EMapElemColor(GenOptions::color);
+    }
+    editor.PluginMapType.ForceMacroblockColor = GenOptions::forceColor;
+
+    // Unplace
+    for(uint i = 0; i < generatedTrack.Length; i++) {
+        auto part = generatedTrack[i].part;
+        auto placePos = generatedTrack[i].position;
+        editor.PluginMapType.RemoveMacroblock(part.macroblock, placePos.position, placePos.direction);
+        if(GenOptions::animate) sleep(30);
+    }
+
+    // Place
+    int currentDuration = 0;
+    for(uint i = 0; i < generatedTrack.Length; i++) {
+        auto part = generatedTrack[i].part;
+        auto placePos = generatedTrack[i].position;
+        
+        if(GenOptions::forceColor) {
+            if(GenOptions::autoColoring) {
+                auto percentage = Math::Clamp(float(currentDuration + part.duration / 2) / float(GenOptions::desiredMapLength), 0, .999999);
+                color = CGameEditorPluginMap::EMapElemColor(availableColors[1 + int((availableColors.Length - 2) * percentage)]);
+            }
+            editor.PluginMapType.NextMapElemColor = color;
+        }
+        currentDuration += part.duration;
+
+        bool placed;
+        if(GenOptions::airMode) {
+            placed = editor.PluginMapType.PlaceMacroblock_AirMode(part.macroblock, placePos.position, placePos.direction);
+        } else {
+            placed = editor.PluginMapType.PlaceMacroblock_NoTerrain_NoUnvalidate(part.macroblock, placePos.position, placePos.direction);
+        }
+        if(!placed) {
+            warn("[REPLACE] Oops something went wrong replacing each track part, part: " + part.ID + ", pos: " + placePos.ToString());
+            return false;
+        }
+        if(GenOptions::animate) 
+            sleep(30);
+    }
+    print("Replaced track " + (Time::Now - now) + "ms");
+    return true;
 }
 
 }

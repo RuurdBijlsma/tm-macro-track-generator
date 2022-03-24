@@ -21,7 +21,7 @@ enum EDifficulty {
     Expert
 };
 
-string[]@ availableTags = { "Tech", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Sausage", "Platform", "FullSpeed", "Nascar", "Transitional", "RPG", "Race"};
+string[]@ availableTags = { "Tech", "Dirt", "Bobsleigh", "Grass", "Ice", "Plastic", "Water", "Sausage", "Platform", "FullSpeed", "Nascar", "Transitional", "RPG"};
 EConnector[]@ availableConnectors = {EConnector::Platform, EConnector::RoadTech, EConnector::RoadDirt, EConnector::RoadIce, EConnector::RoadBump, EConnector::DecoWall};
 EPartType[]@ availableTypes = {EPartType::Start, EPartType::Finish, EPartType::Part, EPartType::Multilap};
 EDifficulty[]@ availableDifficulties = {EDifficulty::Beginner, EDifficulty::Intermediate, EDifficulty::Advanced, EDifficulty::Expert};
@@ -126,6 +126,19 @@ class MacroPart {
             return buffer;
         }
         return buffer;
+    }
+
+    int3 GetFarBound(DirectedPosition@ placePos) {
+        auto size = macroblock.GeneratedBlockInfo.VariantBaseAir.Size;
+        int maxX, maxZ;
+        if(placePos.direction == CGameEditorPluginMap::ECardinalDirections::East || placePos.direction == CGameEditorPluginMap::ECardinalDirections::West) {
+            maxX = placePos.x + size.z - 1; // if east or west
+            maxZ = placePos.z + size.x - 1; // if east or west
+        } else {
+            maxX = placePos.x + size.x - 1; // if north or south
+            maxZ = placePos.z + size.z - 1; // if north or south
+        }
+        return int3(maxX, placePos.y + size.y - 1, maxZ);
     }
 };
 

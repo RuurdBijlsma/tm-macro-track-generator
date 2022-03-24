@@ -1,5 +1,11 @@
 namespace MTG {
 
+bool IntersectsBounds(const int3 &in minA, const int3 &in maxA, const int3 &in minB, const int3 &in maxB) {
+    return (minA.x <= maxB.x && maxA.x >= minB.x) 
+        && (minA.y <= maxB.y && maxA.y >= minB.y) 
+        && (minA.z <= maxB.z && maxA.z >= minB.z);
+}
+
 void CheckMacroParts() {
     auto mbsPath = MTG::GetBlocksFolder() + "Stadium\\" + macroPartFolder + "\\";
     if(IO::FolderExists(mbsPath)){
