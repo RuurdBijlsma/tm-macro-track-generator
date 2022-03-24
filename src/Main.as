@@ -2,27 +2,23 @@
 // -------------- priority high: ----------------
 // * crash when leaving editor
 // * media tracker resets state
-// * refresh not called after reset to default filters?
-// * when generation is done, save all parts + directed positions used in map, remove every placed part, then replace every part to fix the removed blocks bug
+// * explain how to make parts
 
 // -------------- priority low: ---------------
-// * Give warning when creating that non-block mode placed items can end up intersecting 
-//      so dont make large section with just ghost blocks or items, 
-//      if you do then place some blockmode blocks in the area to stop collisions when generating track
 
+// * refresh not called after reset to default filters?
 // * in create process, button to go back to select entrance?
 
 // * Scenery generator? 
 
-// * option to optimize backtracking
-//      - remove randomness but use fancy algorithms
-
 // * soms gaat ie stuk op saving macroblock, dan moet je temp_mtg verwijderen
 
 // * improve performance
-//      - Use connection type for connection check instead of can place
 //      - profile whats taking longest
-//      - dont shuffle every backtrack
+//      - improve shuffle algorithm?
+//      - optmize backtracking with heuristis?
+// * option to optimize backtracking
+//      - remove randomness but use fancy algorithms
 
 // --------------- not possible?: ------------------
 // * say what part is missing when track generation fails (for example: "You need a finish part for 680 speed with platform connector")
