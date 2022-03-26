@@ -1,6 +1,7 @@
 //todo
 // -------------- priority high: ----------------
-// * crash when leaving editor
+// * crash when leaving editor?
+// * crash after generating (and fixing magnet maybe? maybe only on void map?)?
 // * media tracker resets state
 // * explain how to make parts
 
