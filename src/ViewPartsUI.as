@@ -45,6 +45,8 @@ void EnableFolder(const string &in folder) {
 
 void RenderInterface() {
     if(selectedPart is null) {
+        UI::PushTextWrapPos(UI::GetWindowContentRegionWidth());
+        UI::Text("You can pick parts from the map by ctrl clicking them while in macroblock mode (F4). Picked parts have a " + Icons::Eyedropper + " icon before them in this list.");
         if(TMUI::Button("Refresh")) {
             Generate::Initialize();
         }
@@ -102,6 +104,7 @@ void RenderInterface() {
             }
             UI::EndTable();
         }
+        UI::PopTextWrapPos();
     } else {
         RenderPart(selectedPart);
     }

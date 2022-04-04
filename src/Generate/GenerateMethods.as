@@ -147,7 +147,14 @@ MacroPart@[] GetMacroParts() {
 
 void CheckEmbeddedItems() {
     // If user is still in the process of answering the prompt, don't check again
-    if(TMDialog::promptOpen) return;
+    if(TMDialog::promptOpen) {
+        warn("TMDialog::promptOpen");
+        return;
+    };
+    if(allParts.Length == 0) {
+        warn("All parts length = 0");
+    };
+
     auto missingBlock = false;
     string[]@ missingItems = {};
     for(uint i = 0; i < allParts.Length; i++) {

@@ -51,7 +51,7 @@ void set_noRepeats(bool v) {
         _noRepeats = v;
     }
 }
-bool _clearMap = false;
+bool _clearMap = true;
 bool get_clearMap(){return _clearMap;}
 void set_clearMap(bool v) {
     if(_clearMap != v) {
@@ -67,7 +67,7 @@ void set_startHeight(float v) {
         _startHeight = v;
     }
 }
-bool _autoColoring = false;
+bool _autoColoring = true;
 bool get_autoColoring(){return _autoColoring;}
 void set_autoColoring(bool v) {
     if(_autoColoring != v) {
@@ -75,7 +75,7 @@ void set_autoColoring(bool v) {
         _autoColoring = v;
     }
 }
-bool _forceColor = false;
+bool _forceColor = true;
 bool get_forceColor(){return _forceColor;}
 void set_forceColor(bool v) {
     if(_forceColor != v) {
@@ -147,7 +147,7 @@ void set_considerSpeed(bool v) {
         _considerSpeed = v;
     }
 }
-int _maxSpeedVariation = 100;
+int _maxSpeedVariation = 60;
 int get_maxSpeedVariation(){return _maxSpeedVariation;}
 void set_maxSpeedVariation(int v) {
     if(_maxSpeedVariation != v) {
@@ -208,8 +208,10 @@ string optionsFile = IO::FromDataFolder("mtg-options.json");
 
 void Initialize() {
     if(IO::FileExists(optionsFile)) {
+        print("Init GenOptions from mtg-options.json");
         FromFile();
     } else {
+        print("Init GenOptions from default-generationg-options.json");
         ResetToDefault();
     }
     startnew(Update);

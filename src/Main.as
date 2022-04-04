@@ -48,11 +48,22 @@ void Render() {
 }
 
 void Update(float dt) {
-    auto editor = Editor();
+    auto app = GetApp();
+    auto editor = app.Editor;
+    auto editorItem = cast<CGameEditorItem@>(app.Editor);
+    if(editorItem !is null) {
+        // went in create item UI or something
+        warn("editor item is not null, do nothing MTG related");
+        return;
+    }
     if(!isInEditor && editor !is null) {
+        // enter editor
+        warn("Entered editor");
         Generate::Initialize();
     }
     if(isInEditor && editor is null) {
+        // left editor
+        warn("Left editor");
         @Parts::selectedPart = null;
         Generate::ResetState();
         Create::ResetState();

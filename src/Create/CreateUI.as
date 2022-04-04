@@ -192,6 +192,41 @@ void RenderIdleState() {
             EditExistingMacroPart();
         }
     }
+
+    // Explainer
+    if(UI::CollapsingHeader("Tips for creating parts")) {
+        UI::Text("MacroParts need to be built in a certain way, look at the existing parts to get an idea of what they should look like. Parts are generally about 5 second parts of a track with a set entrance and exit speed.");
+        UI::Separator();
+        if(UI::CollapsingHeader("General tips")) {
+            TMUI::TextDisabled("Important tips");
+            UI::Text("● Blocks may not connect to the ground, so when placing blocks always use air mode.");
+            UI::Text("● Free placed blocks don't work when generating tracks, so don't use them. Free placed items and ghost blocks work fine.");
+            UI::Text("● All connector roads (end / start) must be flat, because checking for connectivity between parts doesn't work when banked roads/platforms are involved.");
+            UI::Text("● Bobsleigh entrance/exit connector must be placed at the height of the road borders.");
+            UI::Text("● Give some space (2-3 blocks) at the start of your part to let the driver adjust their line.");
+            UI::Separator();
+            TMUI::TextDisabled("Less important tips");
+            UI::Text("● When placing platforms, try to place 1 layer of wood supports under them (folder 13), otherwise platforms generated directly below your platform part might automatically connect and make the track undrivable.");
+            UI::Text("● Mediatracker works, try to put cam3 in loopings and such. Always reset any mediatracker effects at the end of your part.");
+            UI::Text("● When using effects on the car (reactor, engine off, cruise, water wheels, etc.) remember to reset them at the end of your part.");
+            UI::Text("● Uphill/downhill road turns destroy the block below them in some situations even though the placement is green, you can prevent this by placing any block below uphill/downhill road turns. The generator does a check after generating to see if this bug happened and informs the user.");
+            UI::Text("● Short parts are more likely to be used by the track generator, because they are more likely to physically fit in the map.");
+            UI::Text("● Keep in mind there is quite a bit of speed variation (+/- 60) with which drivers enter your part, don't make extremely precise transitions or speedchecks based on the speed you enter the part with.");
+            UI::Text("● If you notice your part is almost never used by the generator, check the connectivity of the part in the parts list. If very few other parts can connect to your part it's not likely to be used. You can fix this by creating parts which can connect to your part.");
+            UI::Text("● The optimized magnet blocks by BE_Doomsday need to receive a block update after generating, or they will not be magnetic. Other magnet items might be better for use in MacroParts.");
+            UI::Text("● If you only create parts that go uphill, the track generator will get stuck at the top of the map when generating long maps.");
+        }
+        UI::Separator();
+        if(UI::CollapsingHeader("Prevent part from intersecting other parts.")) {
+            UI::Text("The plugin checks if it can place a MacroPart by checking if the placement in that position is 'green', the same as you can see in game when trying to place a macroblock somewhere. Because of this you need to be careful when using items or ghost blocks, because they can be green while intersecting with other parts, making them undrivable. You always need to keep this in mind when creating new parts, because if a road can cross somewhere it shouldn't, then it will eventually do that, and make the track undrivable.");
+            UI::Separator();
+            UI::Text("● When using items or ghost blocks for driving surface, place 12-5-4-1 or any other block (hidden) inside those items to prevent other blocks from intersecting with your item / ghost block.");
+            UI::Text("● When using track walls as roads (folder 13), keep in mind roads can be placed in the driving route, meaning you need to place 12-5-4-1 or any other block to prevent other blocks from intersecting the driving line.");
+            UI::Text("● Jumps also need to be covered by blocks, signs, 12-5-4-1, 12-6-1, and blocks from 12-5-1 can help prevent other parts from routing through the jumping line.");
+            UI::Text("● Technics (folder 12) always generate as they look on the thumbnail icon, however placing them in air mode they might look different. For example, 12-5-1-5 placed in air mode has no X in the middle, the generated version of the part will have it.");
+        }
+    }
+
     UI::PopTextWrapPos();
 }
 
