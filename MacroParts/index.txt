@@ -9,12 +9,10 @@ Items\zzz_ImportedItems\MagnetExpansion\M2_PlatformTechDiag1Wall4DownRight.Block
 Items\zzz_ImportedItems\MagnetExpansion\M2_PlatformTechDiag1Wall4UpLeft.Block.Gbx
 Items\zzz_ImportedItems\Magnet_Blocks\M2_PlatformTechBaseFlip.Block.Gbx
 Items\zzz_ImportedItems\Magnet_Blocks\M2_PlatformTechLoopEnd.Block.Gbx
-Items\zzz_ImportedItems\Magnet_Blocks\M2_PlatformTechLoopOutStart.Block.Gbx
 Items\zzz_ImportedItems\Magnet_Blocks\M2_PlatformTechSlope2End.Block.Gbx
 Items\zzz_ImportedItems\Magnet_Blocks\M2_PlatformTechWallStraight4.Block.Gbx
 Items\zzz_ImportedItems\PlatformDecoSlopeTransition\SlopeTransitionDecoToPlatformBiSlopeStartTech.Item.Gbx
 Items\zzz_ImportedItems\PlatformDecoSlopeTransition\SlopeTransitionPlatformToDecoBiSlopeEndTech.Item.Gbx
-Items\zzz_ImportedItems\PlatformExtensions2pt1\DirtBankedToFlat3R.Item.Gbx
 Items\zzz_ImportedItems\PlatformExtensions2pt1\DirtBankedToFlatDiag5R.Item.Gbx
 Items\zzz_ImportedItems\PlatformExtensions2pt1\DirtBankedToFlatT4L.Item.Gbx
 Items\zzz_ImportedItems\PlatformExtensions2pt1\PlatformBankedToFlat6L.Item.Gbx
@@ -75,7 +73,6 @@ Parts\Fullspeed\MTG-RuteNL-FS-FinishJump.Macroblock.Gbx
 Parts\Fullspeed\MTG-RuteNL-FS-FinReactor.Macroblock.Gbx
 Parts\Fullspeed\MTG-RuteNL-FS-GrassStart.Macroblock.Gbx
 Parts\Fullspeed\MTG-RuteNL-FS-Lil-SD-Zigzag.Macroblock.Gbx
-Parts\Fullspeed\MTG-RuteNL-FS-MagnetQuarterDonut.Macroblock.Gbx
 Parts\Fullspeed\MTG-RuteNL-FS-MagnetWall.Macroblock.Gbx
 Parts\Fullspeed\MTG-RuteNL-FS-Overhead-turn.Macroblock.Gbx
 Parts\Fullspeed\MTG-RuteNL-FS-SD-Downhill.Macroblock.Gbx

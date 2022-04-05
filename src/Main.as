@@ -1,9 +1,5 @@
 //todo
 // -------------- priority high: ----------------
-// * crash when leaving editor?
-// * crash after generating (and fixing magnet maybe? maybe only on void map?)?
-// * media tracker resets state
-// * explain how to make parts
 
 // -------------- priority low: ---------------
 
@@ -14,10 +10,6 @@
 
 // * soms gaat ie stuk op saving macroblock, dan moet je temp_mtg verwijderen
 
-// * improve performance
-//      - profile whats taking longest
-//      - improve shuffle algorithm?
-//      - optmize backtracking with heuristis?
 // * option to optimize backtracking
 //      - remove randomness but use fancy algorithms
 

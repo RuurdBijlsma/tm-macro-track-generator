@@ -13,14 +13,15 @@ void CheckMacroParts() {
     }
     IO::CreateFolder(mbsPath);
     // copy parts over
-    IO::FileSource indexFile(".\\MacroParts\\index.txt");
+    IO::FileSource indexFile("MacroParts/index.txt");
     while(true) {
         auto line = indexFile.ReadLine();
         if(line == "") break;
+        line = line.Replace("\\", "/");
         try {
-            IO::FileSource partFile = IO::FileSource("MacroParts\\" + line);
+            IO::FileSource partFile = IO::FileSource("MacroParts/" + line);
             auto buffer = partFile.Read(partFile.Size());
-            auto lineParts = line.Split("\\");
+            auto lineParts = line.Split("/");
             auto fileType = lineParts[0];
             auto relFile = line.SubStr(fileType.Length);
             print("RelFile: " + relFile);
