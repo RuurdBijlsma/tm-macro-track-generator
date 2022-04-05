@@ -1,5 +1,6 @@
 //todo
 // -------------- priority high: ----------------
+// * Presets for filters/options
 
 // -------------- priority low: ---------------
 

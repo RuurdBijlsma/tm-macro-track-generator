@@ -59,7 +59,7 @@ void set_clearMap(bool v) {
         _clearMap = v;
     }
 }
-float _startHeight = 0.5;
+float _startHeight = 0.1;
 float get_startHeight(){return _startHeight;}
 void set_startHeight(float v) {
     if(_startHeight != v) {

@@ -233,7 +233,7 @@ void RenderFilterOptions() {
     UI::SameLine();
     GenOptions::allowCustomBlocks = TMUI::Checkbox("Custom blocks", GenOptions::allowCustomBlocks);
     GenOptions::respawnable = TMUI::Checkbox("Parts must be respawnable", GenOptions::respawnable);
-    GenOptions::noRepeats = TMUI::Checkbox("Prevent parts being connecting to themselves", GenOptions::noRepeats);
+    GenOptions::noRepeats = TMUI::Checkbox("Prevent parts connecting to themselves", GenOptions::noRepeats);
     GenOptions::considerSpeed = TMUI::Checkbox("Consider speed when connecting parts", GenOptions::considerSpeed);
     if(GenOptions::considerSpeed) {
         TMUI::TextDisabled("Maximum difference in speed between parts:");
