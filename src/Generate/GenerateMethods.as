@@ -198,29 +198,29 @@ void CheckEmbeddedItems() {
         TMDialog::Alert("Some MacroParts contain custom items or blocks which are not yet loaded.", "Restart the game to be able to use these parts");
     } else if(missingItems.Length > 0) {
         print("MIssing items? : " + missingItems.Length);
-#if DEPENDENCY_ITEMEXCHANGE
-    print("DEPENDENCY DETECTED");
-    startnew(AskImportItems, missingItems);
-#else
+// #if DEPENDENCY_ITEMEXCHANGE
+//     print("DEPENDENCY DETECTED");
+//     startnew(AskImportItems, missingItems);
+// #else
     print("DEPENDENCY NOT HERE");
     TMDialog::Alert("Some MacroParts contain custom items or blocks which are not yet loaded.", "Restart the game to be able to use these parts");
-#endif
+// #endif
     }
 }
 
-void AskImportItems(ref@ missingItems) {
-    auto items = cast<string[]@>(missingItems);
-    print("All missing items can be imported!");
-    TMDialog::Confirm(
-        "Some MacroParts contain custom items which are not yet loaded.", 
-        "Import " + items.Length + " item"+(items.Length == 1 ? "" : "s")+" now using the ItemExchange plugin? Restarting the game also loads the items.", 
-        "Import now", "No");
-    while(TMDialog::promptOpen) yield();
-    print("Prompt closed with answer: " + TMDialog::promptResult);
-    if(TMDialog::promptResult) {
-        ItemExchange::ImportUnloadedItems();
-    }
-}
+// void AskImportItems(ref@ missingItems) {
+//     auto items = cast<string[]@>(missingItems);
+//     print("All missing items can be imported!");
+//     TMDialog::Confirm(
+//         "Some MacroParts contain custom items which are not yet loaded.", 
+//         "Import " + items.Length + " item"+(items.Length == 1 ? "" : "s")+" now using the ItemExchange plugin? Restarting the game also loads the items.", 
+//         "Import now", "No");
+//     while(TMDialog::promptOpen) yield();
+//     print("Prompt closed with answer: " + TMDialog::promptResult);
+//     if(TMDialog::promptResult) {
+//         ItemExchange::ImportUnloadedItems();
+//     }
+// }
 
 MacroPart@[]@ GlobalFilterParts() {
     startCount = 0;
