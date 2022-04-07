@@ -53,7 +53,7 @@ class StartPositionGenerator {
                 // couldn't place mb at any height at current x,z coord
                 resumeJ = 0;
                 if(++i % 4 == 0) {
-                    for(uint j = 0; j < step; j++)
+                    for(uint j = 0; j < uint(step); j++)
                         spiral.GoNext();
                 }
             } else {

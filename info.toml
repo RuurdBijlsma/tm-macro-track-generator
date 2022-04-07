@@ -2,8 +2,9 @@
 name = "Macro Track Generator"
 author = "RuteNL"
 category = "Map Editor"
+siteid = 189
 
-version = "0.1.0"
+version = "0.1.1"
 
 [script]
 timeout = 10000
