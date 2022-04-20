@@ -67,8 +67,12 @@ void Update(float dt) {
     }
 }
 
-bool OnKeyPress(bool down, VirtualKey key){ return Create::OnKeyPress(down, key); }
-bool OnMouseButton(bool down, int button, int x, int y){ return Create::OnMouseButton(down, button, x, y); }
+UI::InputBlocking OnKeyPress(bool down, VirtualKey key){ 
+    return Create::OnKeyPress(down, key) ? UI::InputBlocking::Block : UI::InputBlocking::DoNothing; 
+}
+UI::InputBlocking OnMouseButton(bool down, int button, int x, int y){ 
+    return Create::OnMouseButton(down, button, x, y) ? UI::InputBlocking::Block : UI::InputBlocking::DoNothing; 
+}
 
 void RenderMenu() {
 	if (UI::MenuItem("\\$0A5" + Icons::Random + "\\$z Macro Track Generator", "", Generate::windowOpen)) {
