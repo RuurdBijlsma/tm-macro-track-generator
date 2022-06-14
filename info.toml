@@ -4,7 +4,7 @@ author = "RuteNL"
 category = "Map Editor"
 siteid = 189
 
-version = "0.1.2"
+version = "0.1.4"
 
 [script]
 timeout = 10000

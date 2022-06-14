@@ -1,29 +1,30 @@
 namespace Fonts {
-    Resources::Font@ robotoRegular = null;
-    Resources::Font@ robotoBig = null;
-    Resources::Font@ robotoLightItalic = null;
+    UI::Font@ robotoRegular;
+    UI::Font@ robotoBig;
+    UI::Font@ robotoLightItalic;
 
-    Resources::Font@ montserratRegular = null;
-
-    Resources::Font@ droidSansBold = null;
-    Resources::Font@ droidSansRegular = null;
+    nvg::Font montserratRegular;
+    nvg::Font droidSansBold;
+    nvg::Font droidSansRegular;
     bool loaded = false;
 
     void Load() {
         int fontSize = 16;
 
-        @droidSansRegular = Resources::GetFont("DroidSans.ttf", fontSize);
+        @robotoLightItalic = UI::LoadFont("fonts/Roboto-LightItalic.ttf", fontSize);
         yield();
-        @droidSansBold = Resources::GetFont("DroidSans-Bold.ttf", fontSize);
+        @robotoRegular = UI::LoadFont("fonts/Roboto-Regular.ttf", fontSize);
         yield();
-        
-        @robotoLightItalic = Resources::GetFont("fonts/Roboto-LightItalic.ttf", fontSize);
+        @robotoBig = UI::LoadFont("fonts/Roboto-Regular.ttf", 48);
+
+
+        // nvg fonts
         yield();
-        @robotoRegular = Resources::GetFont("fonts/Roboto-Regular.ttf", fontSize);
+        montserratRegular = nvg::LoadFont("fonts/Montserrat-Regular.ttf");
         yield();
-        @robotoBig = Resources::GetFont("fonts/Roboto-Regular.ttf", 48);
+        droidSansBold = nvg::LoadFont("DroidSans-Bold.ttf");
         yield();
-        @montserratRegular = Resources::GetFont("fonts/Montserrat-Regular.ttf", fontSize);
+        droidSansRegular = nvg::LoadFont("DroidSans.ttf");
 
         loaded = true;
     }
