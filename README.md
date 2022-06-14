@@ -29,7 +29,7 @@ Tracks are generated using parts, which are effectively macroblocks with some ex
 
 With this plugin you can create parts the the generator can use for random track generator. Almost any macroblock will work as long as you indicate the correct entrance and exit information. There are some limitations about what can be used that is listed in the "Create parts" tab in the plugin.
 
-This creation processed is also explained in game.
+This creation process is also explained in game.
 
 1. Create a part of a track, for example a road with 2 turns and a checkpoint
 2. Click "Create a part" in the copy/paste UI
