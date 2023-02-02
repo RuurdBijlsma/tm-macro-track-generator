@@ -20,11 +20,11 @@ namespace Fonts {
 
         // nvg fonts
         yield();
-        montserratRegular = nvg::LoadFont("fonts/Montserrat-Regular.ttf");
+        montserratRegular = nvg::LoadFont("fonts/Montserrat-Regular.ttf", true, true);
         yield();
-        droidSansBold = nvg::LoadFont("DroidSans-Bold.ttf");
+        droidSansBold = nvg::LoadFont("DroidSans-Bold.ttf", true, true);
         yield();
-        droidSansRegular = nvg::LoadFont("DroidSans.ttf");
+        droidSansRegular = nvg::LoadFont("DroidSans.ttf", true, true);
 
         loaded = true;
     }

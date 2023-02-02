@@ -264,7 +264,7 @@ void CleanUp() {
     PlaceBackMap();
 }
 
-void Fail(string reason) {
+void Fail(const string &in reason) {
     ResetState();
     state = EState::Failed;
     failureReason = reason;
@@ -568,7 +568,7 @@ void DeleteMacroblock(const string &in relPath) {
     }
 }
 
-string RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, string newName) {
+string RenameMacroblock(CGameCtnMacroBlockInfo@ macroblock, const string &in newName) {
     auto editor = Editor();
     if(editor is null || editor.PluginMapType is null) return "";
     // todo: if mb name is already in format: macropartfolder \\ newName(n).Macroblock.Gbx, then dont delete

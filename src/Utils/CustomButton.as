@@ -14,8 +14,8 @@ class CustomButton {
     string hintText = "";
 
     CustomButton(
-        string action, string label, int x = 5, int y = 5, int width = 30, int height = 30, int fontSize = 20, 
-        vec4 color = vec4(1, 1, 1, 1), vec4 hoverColor = vec4(0, 1, 0, 1), string hintText = ""
+        const string &in action, const string &in label, int x = 5, int y = 5, int width = 30, int height = 30, int fontSize = 20, 
+        vec4 color = vec4(1, 1, 1, 1), vec4 hoverColor = vec4(0, 1, 0, 1), const string &in hintText = ""
     ) {
         this.action = action;
         this.label = label;

@@ -102,7 +102,7 @@ class MacroPart {
         }, MacroPart::DetailSeparator);
     }
 
-    MemoryBuffer GetItemBuffer(string relItemPath) {
+    MemoryBuffer GetItemBuffer(const string &in relItemPath) {
         string input = macroblock.Description;
         auto versionParts = input.Split(MacroPart::DetailSeparator);
         auto version = versionParts[0];

@@ -101,7 +101,7 @@ void set_useSeed(bool v) {
 }
 string _seed = "Hello World";
 string get_seed(){return _seed;}
-void set_seed(string v) {
+void set_seed(const string &in v) {
     if(_seed != v) {
         OnChange();
         _seed = v;
@@ -181,7 +181,7 @@ void set_desiredMapLength(int v) {
 }
 string _author = "";
 string get_author(){return _author;}
-void set_author(string v) {
+void set_author(const string &in v) {
     if(_author != v) {
         OnChange();
         _author = v;

@@ -89,7 +89,7 @@ void RenderHintText() {
 
 void RenderButtons() {
     for(uint i = 0; i < Button::list.Length; i++) {
-        nvg::FontFace(Fonts::droidSansBold);
+        nvg::FontFace(Fonts::droidSansRegular);
         nvg::TextAlign(nvg::Align::Center | nvg::Align::Middle);
         auto button = Button::list[i];
         if(!button.visible) continue;

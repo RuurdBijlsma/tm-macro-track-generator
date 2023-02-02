@@ -129,7 +129,7 @@ DirectedPosition@ MultiplyScalar(DirectedPosition@ pos, float scalar) {
     );
 }
 
-DirectedPosition@ FromString(string input) {
+DirectedPosition@ FromString(const string &in input) {
     auto parts = input.Split(",");
     int x = Text::ParseInt(parts[0]);
     int y = Text::ParseInt(parts[1]);

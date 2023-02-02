@@ -88,7 +88,7 @@ void CreatePartsListRows() {
     }
 }
 
-MacroPart@[] ExploreNode(CGameCtnArticleNodeDirectory@ node, string folder = "") {
+MacroPart@[] ExploreNode(CGameCtnArticleNodeDirectory@ node, const string &in folder = "") {
     MacroPart@[] macroParts = {};
     if(node is null) return macroParts;
     for(uint i = 0; i < node.ChildNodes.Length; i++) {
@@ -111,7 +111,6 @@ MacroPart@[] ExploreNode(CGameCtnArticleNodeDirectory@ node, string folder = "")
             
             MacroPart@[]@ parts = {};
             if(!folders.Exists(folder)) {
-                print("Adding folder: " + folder + ", key count: " + folders.GetKeys().Length);
                 folders.Set(folder, parts);
             } 
             @parts = cast<MacroPart@[]@>(folders[folder]);
@@ -135,9 +134,17 @@ MacroPart@[] GetMacroParts() {
         auto node = cast<CGameCtnArticleNodeDirectory@>(rootNodes[i]);
         if(node is null) continue;
         for(uint j = 0; j < node.ChildNodes.Length; j++) {
-            if(node.ChildNodes[j].Name == macroPartFolder) {
-                macroParts = ExploreNode(cast<CGameCtnArticleNodeDirectory@>(node.ChildNodes[j]));
-                break;
+            auto childNode = cast<CGameCtnArticleNodeDirectory@>(node.ChildNodes[j]);
+            if(childNode is null) continue;
+            if(childNode.Name == "Custom") {
+                for(uint k = 0; k < childNode.ChildNodes.Length; k++) {
+                    auto grandChildNode = cast<CGameCtnArticleNodeDirectory@>(childNode.ChildNodes[k]);
+                    if(grandChildNode is null) continue;
+                    if(grandChildNode.Name == macroPartFolder) {
+                        macroParts = ExploreNode(grandChildNode);
+                        break;
+                    }
+                }
             }
         }
     }

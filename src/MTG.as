@@ -49,7 +49,7 @@ void CheckMacroParts() {
     TMDialog::Alert("You need to restart the game before being able to generate random tracks.", "Included parts must be loaded into the editor, which requires a restart.");
 }
 
-MacroPart@ PartFromID(string ID) {
+MacroPart@ PartFromID(const string &in ID) {
     for(uint i = 0; i < Generate::allParts.Length; i++) {
         if(Generate::allParts[i].ID == ID) {
             return Generate::allParts[i];

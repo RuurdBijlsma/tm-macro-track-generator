@@ -8,7 +8,7 @@ bool seedEnabled = false;
 string seedText = "OPENPLANET";
 double seedDouble = 0;
 
-void SetSeed(string seed) {
+void SetSeed(const string &in seed) {
 	seedEnabled = true;
 	seedText = seed;
 	seedDouble = ConvertSeed(seedText);
@@ -46,11 +46,11 @@ string RandomSeed(int length)
 	return result;
 }
 
-double ConvertSeed(string seed)
+double ConvertSeed(const string &in seed)
 {
 	string newSeed = "";
 	
-	int length = seed.get_Length();
+	int length = seed.Length;
 	if (length > 10) {length = 10;}
 	for(int i = 0; i < length; i++)
 	{
