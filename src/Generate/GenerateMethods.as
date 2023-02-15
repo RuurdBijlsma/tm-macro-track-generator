@@ -136,14 +136,12 @@ MacroPart@[] GetMacroParts() {
         for(uint j = 0; j < node.ChildNodes.Length; j++) {
             auto childNode = cast<CGameCtnArticleNodeDirectory@>(node.ChildNodes[j]);
             if(childNode is null) continue;
-            if(childNode.Name == "Custom") {
-                for(uint k = 0; k < childNode.ChildNodes.Length; k++) {
-                    auto grandChildNode = cast<CGameCtnArticleNodeDirectory@>(childNode.ChildNodes[k]);
-                    if(grandChildNode is null) continue;
-                    if(grandChildNode.Name == macroPartFolder) {
-                        macroParts = ExploreNode(grandChildNode);
-                        break;
-                    }
+            for(uint k = 0; k < childNode.ChildNodes.Length; k++) {
+                auto grandChildNode = cast<CGameCtnArticleNodeDirectory@>(childNode.ChildNodes[k]);
+                if(grandChildNode is null) continue;
+                if(grandChildNode.Name == macroPartFolder) {
+                    macroParts = ExploreNode(grandChildNode);
+                    break;
                 }
             }
         }
